@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package and adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
@@ -35,31 +36,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 
 object classifyRecFN
 {
-    def apply(expWidth: Int, sigWidth: Int, in: Bits) =
+    def apply(expWidth: Int, posWidth: Int, in: Bits) =
     {
-        val minNormExp = (BigInt(1)<<(expWidth - 1)) + 2
-
-        val rawIn = rawFloatFromRecFN(expWidth, sigWidth, in)
-        val isSigNaN = isSigNaNRawFloat(rawIn)
-        val isFiniteNonzero = ! rawIn.isNaN && ! rawIn.isInf && ! rawIn.isZero
-        val isSubnormal = (rawIn.sExp < SInt(minNormExp))
+        val rawIn = rawPositFromRecFN(expWidth, posWidth, in)
+        val isFiniteNonzero = ! rawIn.isNaR && ! rawIn.isZero
 
         Cat(
-            rawIn.isNaN && ! isSigNaN,
-            isSigNaN,
+            rawIn.isNaR,
             ! rawIn.sign && rawIn.isInf,
-            ! rawIn.sign && isFiniteNonzero && ! isSubnormal,
-            ! rawIn.sign && isFiniteNonzero &&   isSubnormal,
-            ! rawIn.sign && rawIn.isZero,
-            rawIn.sign   && rawIn.isZero,
-            rawIn.sign   && isFiniteNonzero &&   isSubnormal,
-            rawIn.sign   && isFiniteNonzero && ! isSubnormal,
+            ! rawIn.sign && isFiniteNonzero,
+            rawIn.isZero,
+            rawIn.sign   && isFiniteNonzero,
             rawIn.sign   && rawIn.isInf
         )
     }

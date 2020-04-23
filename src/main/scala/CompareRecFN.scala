@@ -1,8 +1,8 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package and adpatation of the HardFloat package, by John R. Hauser
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the
@@ -35,49 +35,30 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 
-class CompareRecFN(expWidth: Int, sigWidth: Int) extends Module
+class CompareRecFN(expWidth: Int, posWidth: Int) extends Module
 {
     val io = new Bundle {
-        val a = Bits(INPUT, expWidth + sigWidth + 1)
-        val b = Bits(INPUT, expWidth + sigWidth + 1)
+        val a = Bits(INPUT, posWidth)
+        val b = Bits(INPUT, posWidth)
         val signaling = Bool(INPUT)
         val lt = Bool(OUTPUT)
         val eq = Bool(OUTPUT)
         val gt = Bool(OUTPUT)
-        val exceptionFlags = Bits(OUTPUT, 5)
     }
 
-    val rawA = rawFloatFromRecFN(expWidth, sigWidth, io.a)
-    val rawB = rawFloatFromRecFN(expWidth, sigWidth, io.b)
+    val rawA = rawPositFromRecFN(expWidth, posWidth, io.a)
+    val rawB = rawPositFromRecFN(expWidth, posWidth, io.b)
 
-    val ordered = ! rawA.isNaN && ! rawB.isNaN
-    val bothInfs  = rawA.isInf  && rawB.isInf
-    val bothZeros = rawA.isZero && rawB.isZero
-    val eqExps = (rawA.sExp === rawB.sExp)
-    val common_ltMags =
-        (rawA.sExp < rawB.sExp) || (eqExps && (rawA.sig < rawB.sig))
-    val common_eqMags = eqExps && (rawA.sig === rawB.sig)
+    val ordered = ! rawA.isNaR && ! rawB.isNaR
 
-    val ordered_lt =
-        ! bothZeros &&
-            ((rawA.sign && ! rawB.sign) ||
-                 (! bothInfs &&
-                      ((rawA.sign && ! common_ltMags && ! common_eqMags) ||
-                           (! rawB.sign && common_ltMags))))
-    val ordered_eq =
-        bothZeros || ((rawA.sign === rawB.sign) && (bothInfs || common_eqMags))
-
-    val invalid =
-        isSigNaNRawFloat(rawA) || isSigNaNRawFloat(rawB) ||
-            (io.signaling && ! ordered)
+    val ordered_lt = a < b
+    val ordered_eq = a === b
 
     io.lt := ordered && ordered_lt
     io.eq := ordered && ordered_eq
     io.gt := ordered && ! ordered_lt && ! ordered_eq
-    io.exceptionFlags := Cat(invalid, Bits(0, 4))
 }
-

@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package and adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
@@ -35,27 +36,27 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 
-class ValExec_MulAddRecFN(expWidth: Int, sigWidth: Int) extends Module
+class ValExec_MulAddRecFN(expWidth: Int, posWidth: Int) extends Module
 {
     val io = new Bundle {
-        val a = Bits(INPUT, expWidth + sigWidth)
-        val b = Bits(INPUT, expWidth + sigWidth)
-        val c = Bits(INPUT, expWidth + sigWidth)
+        val a = Bits(INPUT, posWidth - 1)
+        val b = Bits(INPUT, posWidth - 1)
+        val c = Bits(INPUT, posWidth - 1)
         val roundingMode   = UInt(INPUT, 3)
         val detectTininess = UInt(INPUT, 1)
 
         val expected = new Bundle {
-            val out = Bits(INPUT, expWidth + sigWidth)
+            val out = Bits(INPUT, posWidth - 1)
             val exceptionFlags = Bits(INPUT, 5)
-            val recOut = Bits(OUTPUT, expWidth + sigWidth + 1)
+            val recOut = Bits(OUTPUT, posWidth)
         }
 
         val actual = new Bundle {
-            val out = Bits(OUTPUT, expWidth + sigWidth + 1)
+            val out = Bits(OUTPUT, posWidth)
             val exceptionFlags = Bits(OUTPUT, 5)
         }
 
@@ -63,15 +64,15 @@ class ValExec_MulAddRecFN(expWidth: Int, sigWidth: Int) extends Module
         val pass = Bool(OUTPUT)
     }
 
-    val mulAddRecFN = Module(new MulAddRecFN(expWidth, sigWidth))
+    val mulAddRecFN = Module(new MulAddRecFN(expWidth, posWidth))
     mulAddRecFN.io.op := UInt(0)
-    mulAddRecFN.io.a := recFNFromFN(expWidth, sigWidth, io.a)
-    mulAddRecFN.io.b := recFNFromFN(expWidth, sigWidth, io.b)
-    mulAddRecFN.io.c := recFNFromFN(expWidth, sigWidth, io.c)
+    mulAddRecFN.io.a := recFNFromFN(expWidth, posWidth, io.a)
+    mulAddRecFN.io.b := recFNFromFN(expWidth, posWidth, io.b)
+    mulAddRecFN.io.c := recFNFromFN(expWidth, posWidth, io.c)
     mulAddRecFN.io.roundingMode   := io.roundingMode
     mulAddRecFN.io.detectTininess := io.detectTininess
 
-    io.expected.recOut := recFNFromFN(expWidth, sigWidth, io.expected.out)
+    io.expected.recOut := recFNFromFN(expWidth, posWidth, io.expected.out)
 
     io.actual.out := mulAddRecFN.io.out
     io.actual.exceptionFlags := mulAddRecFN.io.exceptionFlags
@@ -82,26 +83,26 @@ class ValExec_MulAddRecFN(expWidth: Int, sigWidth: Int) extends Module
         (io.actual.exceptionFlags === io.expected.exceptionFlags)
 }
 
-class ValExec_MulAddRecF16 extends ValExec_MulAddRecFN(5, 11)
-class ValExec_MulAddRecF32 extends ValExec_MulAddRecFN(8, 24)
-class ValExec_MulAddRecF64 extends ValExec_MulAddRecFN(11, 53)
+class ValExec_MulAddRecF16 extends ValExec_MulAddRecFN(2, 16)
+class ValExec_MulAddRecF32 extends ValExec_MulAddRecFN(3, 32)
+class ValExec_MulAddRecF64 extends ValExec_MulAddRecFN(4, 64)
 
-class ValExec_MulAddRecFN_add(expWidth: Int, sigWidth: Int) extends Module
+class ValExec_MulAddRecFN_add(expWidth: Int, posWidth: Int) extends Module
 {
     val io = new Bundle {
-        val a = Bits(INPUT, expWidth + sigWidth)
-        val b = Bits(INPUT, expWidth + sigWidth)
+        val a = Bits(INPUT, posWidth - 1)
+        val b = Bits(INPUT, posWidth - 1)
         val roundingMode   = UInt(INPUT, 3)
         val detectTininess = UInt(INPUT, 1)
 
         val expected = new Bundle {
-            val out = Bits(INPUT, expWidth + sigWidth)
+            val out = Bits(INPUT, posWidth - 1)
             val exceptionFlags = Bits(INPUT, 5)
-            val recOut = Bits(OUTPUT, expWidth + sigWidth + 1)
+            val recOut = Bits(OUTPUT, posWidth)
         }
 
         val actual = new Bundle {
-            val out = Bits(OUTPUT, expWidth + sigWidth + 1)
+            val out = Bits(OUTPUT, posWidth)
             val exceptionFlags = Bits(OUTPUT, 5)
         }
 
@@ -109,15 +110,15 @@ class ValExec_MulAddRecFN_add(expWidth: Int, sigWidth: Int) extends Module
         val pass = Bool(OUTPUT)
     }
 
-    val mulAddRecFN = Module(new MulAddRecFN(expWidth, sigWidth))
+    val mulAddRecFN = Module(new MulAddRecFN(expWidth, posWidth))
     mulAddRecFN.io.op := UInt(0)
-    mulAddRecFN.io.a := recFNFromFN(expWidth, sigWidth, io.a)
-    mulAddRecFN.io.b := UInt(BigInt(1)<<(expWidth + sigWidth - 1))
-    mulAddRecFN.io.c := recFNFromFN(expWidth, sigWidth, io.b)
+    mulAddRecFN.io.a := recFNFromFN(expWidth, posWidth, io.a)
+    mulAddRecFN.io.b := UInt(BigInt(1)<<(expWidth + sigWidth - 1))  // Fix this
+    mulAddRecFN.io.c := recFNFromFN(expWidth, posWidth, io.b)
     mulAddRecFN.io.roundingMode   := io.roundingMode
     mulAddRecFN.io.detectTininess := io.detectTininess
 
-    io.expected.recOut := recFNFromFN(expWidth, sigWidth, io.expected.out)
+    io.expected.recOut := recFNFromFN(expWidth, posWidth, io.expected.out)
 
     io.actual.out := mulAddRecFN.io.out
     io.actual.exceptionFlags := mulAddRecFN.io.exceptionFlags
@@ -128,26 +129,26 @@ class ValExec_MulAddRecFN_add(expWidth: Int, sigWidth: Int) extends Module
         (io.actual.exceptionFlags === io.expected.exceptionFlags)
 }
 
-class ValExec_MulAddRecF16_add extends ValExec_MulAddRecFN_add(5, 11)
-class ValExec_MulAddRecF32_add extends ValExec_MulAddRecFN_add(8, 24)
-class ValExec_MulAddRecF64_add extends ValExec_MulAddRecFN_add(11, 53)
+class ValExec_MulAddRecF16_add extends ValExec_MulAddRecFN_add(2, 16)
+class ValExec_MulAddRecF32_add extends ValExec_MulAddRecFN_add(3, 32)
+class ValExec_MulAddRecF64_add extends ValExec_MulAddRecFN_add(4, 64)
 
-class ValExec_MulAddRecFN_mul(expWidth: Int, sigWidth: Int) extends Module
+class ValExec_MulAddRecFN_mul(expWidth: Int, posWidth: Int) extends Module
 {
     val io = new Bundle {
-        val a = Bits(INPUT, expWidth + sigWidth)
-        val b = Bits(INPUT, expWidth + sigWidth)
+        val a = Bits(INPUT, posWidth - 1)
+        val b = Bits(INPUT, posWidth - 1)
         val roundingMode   = UInt(INPUT, 3)
         val detectTininess = UInt(INPUT, 1)
 
         val expected = new Bundle {
-            val out = Bits(INPUT, expWidth + sigWidth)
+            val out = Bits(INPUT, posWidth - 1)
             val exceptionFlags = Bits(INPUT, 5)
-            val recOut = Bits(OUTPUT, expWidth + sigWidth + 1)
+            val recOut = Bits(OUTPUT, posWidth)
         }
 
         val actual = new Bundle {
-            val out = Bits(OUTPUT, expWidth + sigWidth + 1)
+            val out = Bits(OUTPUT, posWidth)
             val exceptionFlags = Bits(OUTPUT, 5)
         }
 
@@ -155,16 +156,16 @@ class ValExec_MulAddRecFN_mul(expWidth: Int, sigWidth: Int) extends Module
         val pass = Bool(OUTPUT)
     }
 
-    val mulAddRecFN = Module(new MulAddRecFN(expWidth, sigWidth))
+    val mulAddRecFN = Module(new MulAddRecFN(expWidth, posWidth))
     mulAddRecFN.io.op := UInt(0)
-    mulAddRecFN.io.a := recFNFromFN(expWidth, sigWidth, io.a)
-    mulAddRecFN.io.b := recFNFromFN(expWidth, sigWidth, io.b)
+    mulAddRecFN.io.a := recFNFromFN(expWidth, posWidth, io.a)
+    mulAddRecFN.io.b := recFNFromFN(expWidth, posWidth, io.b)
     mulAddRecFN.io.c :=
-        ((io.a ^ io.b) & UInt(BigInt(1)<<(expWidth + sigWidth - 1)))<<1
+        ((io.a ^ io.b) & UInt(BigInt(1)<<(expWidth + sigWidth - 1)))<<1 // Fix this line
     mulAddRecFN.io.roundingMode   := io.roundingMode
     mulAddRecFN.io.detectTininess := io.detectTininess
 
-    io.expected.recOut := recFNFromFN(expWidth, sigWidth, io.expected.out)
+    io.expected.recOut := recFNFromFN(expWidth, posWidth, io.expected.out)
 
     io.actual.out := mulAddRecFN.io.out
     io.actual.exceptionFlags := mulAddRecFN.io.exceptionFlags
@@ -175,7 +176,7 @@ class ValExec_MulAddRecFN_mul(expWidth: Int, sigWidth: Int) extends Module
         (io.actual.exceptionFlags === io.expected.exceptionFlags)
 }
 
-class ValExec_MulAddRecF16_mul extends ValExec_MulAddRecFN_mul(5, 11)
-class ValExec_MulAddRecF32_mul extends ValExec_MulAddRecFN_mul(8, 24)
-class ValExec_MulAddRecF64_mul extends ValExec_MulAddRecFN_mul(11, 53)
+class ValExec_MulAddRecF16_mul extends ValExec_MulAddRecFN_mul(2, 16)
+class ValExec_MulAddRecF32_mul extends ValExec_MulAddRecFN_mul(3, 32)
+class ValExec_MulAddRecF64_mul extends ValExec_MulAddRecFN_mul(4, 64)
 

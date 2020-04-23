@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package and adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the
@@ -35,21 +36,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 
 object recFNFromFN
 {
-    def apply(expWidth: Int, sigWidth: Int, in: Bits) =
+    def apply(expWidth: Int, posWidth: Int, in: Bits) =
     {
-        val rawIn = rawFloatFromFN(expWidth, sigWidth, in)
-        Cat(rawIn.sign,
-            Mux(rawIn.isZero, Bits(0, 3), rawIn.sExp(expWidth, expWidth - 2)) |
-                Mux(rawIn.isNaN, UInt(1), UInt(0)),
-            rawIn.sExp(expWidth - 3, 0),
-            rawIn.sig(sigWidth - 2, 0)
-        )
+        val rawIn = rawPositFromFN(expWidth, posWidth, in)
+        val NaR = BigInt(1) << (posWidth-1)
+        val rgmu = (BigInt(1) << rawIn.regime) - 1
+        val bld = Cat(rawIn.regsign,
+          Mux(rawIn.regsign,Cat((rgmu(rawIn.regime,0),rawIn.regsign),
+            ~Cat((rgmu(rawIn.regime,0),rawIn.regsign)),rawIn.sExp(expWidth-1,0),
+            rawIn.sig(posWidth - expWidth - Mux(rawIn.regsign,rawIn.regime+2,rawIn.regime+1),0)))
+        Mux(rawIn.isNaR,NaR(posWidth-1,0),Cat(rawIn.sign,Mux(rawIn.sign,-bld,bld)(posWidth-2,0)))
     }
 }
-

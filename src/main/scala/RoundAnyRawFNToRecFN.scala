@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package an adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
@@ -35,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 import consts._
@@ -46,9 +47,9 @@ import consts._
 class
     RoundAnyRawFNToRecFN(
         inExpWidth: Int,
-        inSigWidth: Int,
+        inPosWidth: Int,
         outExpWidth: Int,
-        outSigWidth: Int,
+        outPosWidth: Int,
         options: Int
     )
     extends Module
@@ -56,11 +57,11 @@ class
     val io = new Bundle {
         val invalidExc  = Bool(INPUT)   // overrides 'infiniteExc' and 'in'
         val infiniteExc = Bool(INPUT)   // overrides 'in' except for 'in.sign'
-        val in = new RawFloat(inExpWidth, inSigWidth).asInput
+        val in = new RawPosit(inExpWidth, inPosWidth).asInput
                                         // (allowed exponent range has limits)
         val roundingMode   = UInt(INPUT, 3)
         val detectTininess = UInt(INPUT, 1)
-        val out = Bits(OUTPUT, outExpWidth + outSigWidth + 1)
+        val out = Bits(OUTPUT, outPosWidth)
         val exceptionFlags = Bits(OUTPUT, 5)
     }
 
@@ -290,23 +291,23 @@ class
 //----------------------------------------------------------------------------
 
 class
-    RoundRawFNToRecFN(expWidth: Int, sigWidth: Int, options: Int)
+    RoundRawFNToRecFN(expWidth: Int, posWidth: Int, options: Int)
     extends Module
 {
     val io = new Bundle {
         val invalidExc  = Bool(INPUT)   // overrides 'infiniteExc' and 'in'
         val infiniteExc = Bool(INPUT)   // overrides 'in' except for 'in.sign'
-        val in = new RawFloat(expWidth, sigWidth + 2).asInput
+        val in = new RawPosit(expWidth, posWidth + 1).asInput
         val roundingMode   = UInt(INPUT, 3)
         val detectTininess = UInt(INPUT, 1)
-        val out = Bits(OUTPUT, expWidth + sigWidth + 1)
+        val out = Bits(OUTPUT, posWidth)
         val exceptionFlags = Bits(OUTPUT, 5)
     }
 
     val roundAnyRawFNToRecFN =
         Module(
             new RoundAnyRawFNToRecFN(
-                    expWidth, sigWidth + 2, expWidth, sigWidth, options))
+                    expWidth, posWidth + 1, expWidth, posWidth, options))
     roundAnyRawFNToRecFN.io.invalidExc     := io.invalidExc
     roundAnyRawFNToRecFN.io.infiniteExc    := io.infiniteExc
     roundAnyRawFNToRecFN.io.in             := io.in

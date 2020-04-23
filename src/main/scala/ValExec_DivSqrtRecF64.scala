@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package an adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the
@@ -35,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 
@@ -83,8 +84,8 @@ class ValExec_DivSqrtRecF64_div extends Module {
     io.input.ready := ds.io.inReady_div && cq.io.enq.ready
     ds.io.inValid := io.input.valid && cq.io.enq.ready
     ds.io.sqrtOp := Bool(false)
-    ds.io.a := recFNFromFN(11, 53, io.input.bits.a)
-    ds.io.b := recFNFromFN(11, 53, io.input.bits.b)
+    ds.io.a := recFNFromFN(4, 64, io.input.bits.a)
+    ds.io.b := recFNFromFN(4, 64, io.input.bits.b)
     ds.io.roundingMode   := io.input.bits.roundingMode
     ds.io.detectTininess := io.input.bits.detectTininess
 
@@ -95,7 +96,7 @@ class ValExec_DivSqrtRecF64_div extends Module {
 
     io.expected.out := cq.io.deq.bits.out
     io.expected.exceptionFlags := cq.io.deq.bits.exceptionFlags
-    io.expected.recOut := recFNFromFN(11, 53, cq.io.deq.bits.out)
+    io.expected.recOut := recFNFromFN(4, 64, cq.io.deq.bits.out)
 
     io.actual.out := ds.io.out
     io.actual.exceptionFlags := ds.io.exceptionFlags
@@ -105,7 +106,7 @@ class ValExec_DivSqrtRecF64_div extends Module {
     io.check := ds.io.outValid_div
     io.pass :=
         cq.io.deq.valid &&
-        equivRecFN(11, 53, io.actual.out, io.expected.recOut) &&
+        equivRecFN(4, 64, io.actual.out, io.expected.recOut) &&
         (io.actual.exceptionFlags === io.expected.exceptionFlags)
 }
 
@@ -151,7 +152,7 @@ class ValExec_DivSqrtRecF64_sqrt extends Module {
     io.input.ready := ds.io.inReady_sqrt && cq.io.enq.ready
     ds.io.inValid := io.input.valid && cq.io.enq.ready
     ds.io.sqrtOp := Bool(true)
-    ds.io.b := recFNFromFN(11, 53, io.input.bits.b)
+    ds.io.b := recFNFromFN(4, 64, io.input.bits.b)
     ds.io.roundingMode   := io.input.bits.roundingMode
     ds.io.detectTininess := io.input.bits.detectTininess
 
@@ -161,7 +162,7 @@ class ValExec_DivSqrtRecF64_sqrt extends Module {
 
     io.expected.out := cq.io.deq.bits.out
     io.expected.exceptionFlags := cq.io.deq.bits.exceptionFlags
-    io.expected.recOut := recFNFromFN(11, 53, cq.io.deq.bits.out)
+    io.expected.recOut := recFNFromFN(4, 64, cq.io.deq.bits.out)
 
     io.actual.exceptionFlags := ds.io.exceptionFlags
     io.actual.out := ds.io.out
@@ -171,7 +172,7 @@ class ValExec_DivSqrtRecF64_sqrt extends Module {
     io.check := ds.io.outValid_sqrt
     io.pass :=
         cq.io.deq.valid &&
-        equivRecFN(11, 53, io.actual.out, io.expected.recOut) &&
+        equivRecFN(4, 64, io.actual.out, io.expected.recOut) &&
         (io.actual.exceptionFlags === io.expected.exceptionFlags)
 }
 

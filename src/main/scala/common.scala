@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package and adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018 The Regents of
@@ -35,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 
@@ -62,22 +63,36 @@ object consts {
     def flRoundOpt_neverOverflows      = 8
 }
 
-class RawFloat(val expWidth: Int, val sigWidth: Int) extends Bundle
+class RawPosit(val expWidth: Int, val posWidth: Int) extends Bundle
 {
-    val isNaN  = Bool()              // overrides all other fields
+    val isNaR  = Bool()              // overrides all other fields
     val isInf  = Bool()              // overrides 'isZero', 'sExp', and 'sig'
     val isZero = Bool()              // overrides 'sExp' and 'sig'
     val sign   = Bool()
     val sExp = SInt(width = expWidth + 2)
-    val sig  = UInt(width = sigWidth + 1)   // 2 m.s. bits cannot both be 0
+    val regsign = Bool()
+    val regime = UInt(width = log2Up(posWidth))
+    val sigWidth = posWidth - expWidth - 2 + 1
+    val sig  = UInt(width = posWidth - expWidth - 2 + 1) // min regime = 10 or 01 (2 bits)
 
     override def cloneType =
-        new RawFloat(expWidth, sigWidth).asInstanceOf[this.type]
+        new RawPosit(expWidth, posWidth).asInstanceOf[this.type]
 }
 
-//*** CHANGE THIS INTO A '.isSigNaN' METHOD OF THE 'RawFloat' CLASS:
-object isSigNaNRawFloat
+// Double significand for fused operations
+class RawPositDblSig(val expWidth: Int, val posWidth: Int) extends Bundle
 {
-    def apply(in: RawFloat): Bool = in.isNaN && !in.sig(in.sigWidth - 2)
+    val isNaR  = Bool()              // overrides all other fields
+    val isInf  = Bool()              // overrides 'isZero', 'sExp', and 'sig'
+    val isZero = Bool()              // overrides 'sExp' and 'sig'
+    val sign   = Bool()
+    val regsign = Bool()
+    val regime = UInt(width = log2Up(posWidth))
+    val sExp = SInt(width = expWidth + 2)
+    val sigWidth = (posWidth - expWidth - 2) * 2 + 1
+    val sig  = UInt(width = (posWidth - expWidth - 2) * 2 + 1) // min regime = 10 or 01 (2 bits)
+
+    override def cloneType =
+        new RawPositDblSig(expWidth, posWidth).asInstanceOf[this.type]
 }
 

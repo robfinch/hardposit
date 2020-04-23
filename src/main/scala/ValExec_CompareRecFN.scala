@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package an adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the
@@ -35,15 +36,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 
-class ValExec_CompareRecFN_lt(expWidth: Int, sigWidth: Int) extends Module
+class ValExec_CompareRecFN_lt(expWidth: Int, posWidth: Int) extends Module
 {
     val io = new Bundle {
-        val a = Bits(INPUT, expWidth + sigWidth)
-        val b = Bits(INPUT, expWidth + sigWidth)
+        val a = Bits(INPUT, posWidth-1)
+        val b = Bits(INPUT, posWidth-1)
         val expected = new Bundle {
             val out = Bits(INPUT, 1)
             val exceptionFlags = Bits(INPUT, 5)
@@ -56,9 +57,9 @@ class ValExec_CompareRecFN_lt(expWidth: Int, sigWidth: Int) extends Module
         val pass = Bool(OUTPUT)
     }
 
-    val compareRecFN = Module(new CompareRecFN(expWidth, sigWidth))
-    compareRecFN.io.a := recFNFromFN(expWidth, sigWidth, io.a)
-    compareRecFN.io.b := recFNFromFN(expWidth, sigWidth, io.b)
+    val compareRecFN = Module(new CompareRecFN(expWidth, posWidth))
+    compareRecFN.io.a := recFNFromFN(expWidth, posWidth, io.a)
+    compareRecFN.io.b := recFNFromFN(expWidth, posWidth, io.b)
     compareRecFN.io.signaling := Bool(true)
 
     io.actual.out := compareRecFN.io.lt
@@ -70,15 +71,15 @@ class ValExec_CompareRecFN_lt(expWidth: Int, sigWidth: Int) extends Module
         (io.actual.exceptionFlags === io.expected.exceptionFlags)
 }
 
-class ValExec_CompareRecF16_lt extends ValExec_CompareRecFN_lt(5, 11)
-class ValExec_CompareRecF32_lt extends ValExec_CompareRecFN_lt(8, 24)
-class ValExec_CompareRecF64_lt extends ValExec_CompareRecFN_lt(11, 53)
+class ValExec_CompareRecF16_lt extends ValExec_CompareRecFN_lt(2, 16)
+class ValExec_CompareRecF32_lt extends ValExec_CompareRecFN_lt(3, 32)
+class ValExec_CompareRecF64_lt extends ValExec_CompareRecFN_lt(4, 64)
 
-class ValExec_CompareRecFN_le(expWidth: Int, sigWidth: Int) extends Module
+class ValExec_CompareRecFN_le(expWidth: Int, posWidth: Int) extends Module
 {
     val io = new Bundle {
-        val a = Bits(INPUT, expWidth + sigWidth)
-        val b = Bits(INPUT, expWidth + sigWidth)
+        val a = Bits(INPUT, posWidth - 1)
+        val b = Bits(INPUT, posWidth - 1)
         val expected = new Bundle {
             val out = Bits(INPUT, 1)
             val exceptionFlags = Bits(INPUT, 5)
@@ -91,9 +92,9 @@ class ValExec_CompareRecFN_le(expWidth: Int, sigWidth: Int) extends Module
         val pass = Bool(OUTPUT)
     }
 
-    val compareRecFN = Module(new CompareRecFN(expWidth, sigWidth))
-    compareRecFN.io.a := recFNFromFN(expWidth, sigWidth, io.a)
-    compareRecFN.io.b := recFNFromFN(expWidth, sigWidth, io.b)
+    val compareRecFN = Module(new CompareRecFN(expWidth, posWidth))
+    compareRecFN.io.a := recFNFromFN(expWidth, posWidth, io.a)
+    compareRecFN.io.b := recFNFromFN(expWidth, posWidth, io.b)
     compareRecFN.io.signaling := Bool(true)
 
     io.actual.out := compareRecFN.io.lt || compareRecFN.io.eq
@@ -105,15 +106,15 @@ class ValExec_CompareRecFN_le(expWidth: Int, sigWidth: Int) extends Module
         (io.actual.exceptionFlags === io.expected.exceptionFlags)
 }
 
-class ValExec_CompareRecF16_le extends ValExec_CompareRecFN_le(5, 11)
-class ValExec_CompareRecF32_le extends ValExec_CompareRecFN_le(8, 24)
-class ValExec_CompareRecF64_le extends ValExec_CompareRecFN_le(11, 53)
+class ValExec_CompareRecF16_le extends ValExec_CompareRecFN_le(2, 16)
+class ValExec_CompareRecF32_le extends ValExec_CompareRecFN_le(3, 32)
+class ValExec_CompareRecF64_le extends ValExec_CompareRecFN_le(4, 64)
 
-class ValExec_CompareRecFN_eq(expWidth: Int, sigWidth: Int) extends Module
+class ValExec_CompareRecFN_eq(expWidth: Int, posWidth: Int) extends Module
 {
     val io = new Bundle {
-        val a = Bits(INPUT, expWidth + sigWidth)
-        val b = Bits(INPUT, expWidth + sigWidth)
+        val a = Bits(INPUT, posWidth - 1)
+        val b = Bits(INPUT, posWidth - 1)
         val expected = new Bundle {
             val out = Bits(INPUT, 1)
             val exceptionFlags = Bits(INPUT, 5)
@@ -126,9 +127,9 @@ class ValExec_CompareRecFN_eq(expWidth: Int, sigWidth: Int) extends Module
         val pass = Bool(OUTPUT)
     }
 
-    val compareRecFN = Module(new CompareRecFN(expWidth, sigWidth))
-    compareRecFN.io.a := recFNFromFN(expWidth, sigWidth, io.a)
-    compareRecFN.io.b := recFNFromFN(expWidth, sigWidth, io.b)
+    val compareRecFN = Module(new CompareRecFN(expWidth, posWidth))
+    compareRecFN.io.a := recFNFromFN(expWidth, posWidth, io.a)
+    compareRecFN.io.b := recFNFromFN(expWidth, posWidth, io.b)
     compareRecFN.io.signaling := Bool(false)
 
     io.actual.out := compareRecFN.io.eq
@@ -140,7 +141,7 @@ class ValExec_CompareRecFN_eq(expWidth: Int, sigWidth: Int) extends Module
         (io.actual.exceptionFlags === io.expected.exceptionFlags)
 }
 
-class ValExec_CompareRecF16_eq extends ValExec_CompareRecFN_eq(5, 11)
-class ValExec_CompareRecF32_eq extends ValExec_CompareRecFN_eq(8, 24)
-class ValExec_CompareRecF64_eq extends ValExec_CompareRecFN_eq(11, 53)
+class ValExec_CompareRecF16_eq extends ValExec_CompareRecFN_eq(2, 16)
+class ValExec_CompareRecF32_eq extends ValExec_CompareRecFN_eq(3, 32)
+class ValExec_CompareRecF64_eq extends ValExec_CompareRecFN_eq(4, 64)
 

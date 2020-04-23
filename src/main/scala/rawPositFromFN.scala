@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package and adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
@@ -39,30 +40,36 @@ package hardposit
 
 import Chisel._
 
-object fNFromRecFN
+object rawPositFromFN
 {
-    def apply(expWidth: Int, sigWidth: Int, in: Bits) =
+    def apply(expWidth: Int, posWidth: Int, in: Bits) =
     {
-        val minNormExp = (BigInt(1)<<(expWidth - 1)) + 2
+        val sign = in(posWidth - 1)
+        val reglen = in(posWidth-2,0).countLeadingBits() + 1
+        val regsign = in(posWidth-2)
+        val regimeIn = Mux(regsign,reglen,reglen-1)
+        val expIn = in(posWidth - reglen -1, posWidth - reglen - expWidth)
+        val fractIn = in(posWidth - reglen - expWidth - 1, 0)
 
-        val rawIn = rawFloatFromRecFN(expWidth, sigWidth, in)
+        val isZeroExpIn = (expIn === UInt(0))
+        val isZeroFractIn = (fractIn === UInt(0))
 
-        val isSubnormal = (rawIn.sExp < SInt(minNormExp))
-        val denormShiftDist = UInt(1) - rawIn.sExp(log2Up(sigWidth - 1) - 1, 0)
-        val denormFract = ((rawIn.sig>>1)>>denormShiftDist)(sigWidth - 2, 0)
+        val normDist = 0
+        val adjustedExp = expIn
 
-        val expOut =
-            Mux(isSubnormal,
-                UInt(0),
-                rawIn.sExp(expWidth - 1, 0) -
-                    UInt((BigInt(1)<<(expWidth - 1)) + 1)
-            ) | Fill(expWidth, rawIn.isNaN || rawIn.isInf)
-        val fractOut =
-            Mux(isSubnormal,
-                denormFract,
-                Mux(rawIn.isInf, UInt(0), rawIn.sig(sigWidth - 2, 0))
-            )
-        Cat(rawIn.sign, expOut, fractOut)
+        val isZero = in === UInt(0)
+        val isSpecial = in(posWidth-1) === UInt(1) && in(posWidth-2,0) === UInt(0)
+
+        val out = Wire(new RawPosit(expWidth, posWidth))
+        out.isNaR  := isSpecial
+        out.isInf  := isSpecial
+        out.isZero := isZero
+        out.sign   := sign
+        out.regsign := regsign
+        out.regime := regimeIn
+        out.sExp   := adjustedExp(expWidth, 0).zext
+        out.sig    := Cat(UInt(0,1),1,fractIn)
+        out
     }
 }
 

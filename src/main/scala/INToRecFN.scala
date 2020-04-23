@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package and adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the
@@ -35,12 +36,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 import consts._
 
-class INToRecFN(intWidth: Int, expWidth: Int, sigWidth: Int) extends Module
+class INToRecFN(intWidth: Int, expWidth: Int, posWidth: Int) extends Module
 {
     val io = new Bundle {
         val signedIn = Bool(INPUT)
@@ -53,7 +54,7 @@ class INToRecFN(intWidth: Int, expWidth: Int, sigWidth: Int) extends Module
 
     //------------------------------------------------------------------------
     //------------------------------------------------------------------------
-    val intAsRawFloat = rawFloatFromIN(io.signedIn, io.in);
+    val intAsRawFloat = rawPositFromIN(io.signedIn, io.in);
 
     val roundAnyRawFNToRecFN =
         Module(
@@ -61,7 +62,7 @@ class INToRecFN(intWidth: Int, expWidth: Int, sigWidth: Int) extends Module
                     intAsRawFloat.expWidth,
                     intWidth,
                     expWidth,
-                    sigWidth,
+                    posWidth,
                     flRoundOpt_sigMSBitAlwaysZero | flRoundOpt_neverUnderflows
                 ))
     roundAnyRawFNToRecFN.io.invalidExc     := Bool(false)

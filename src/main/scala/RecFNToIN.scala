@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package and adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018 The Regents of
@@ -35,16 +36,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 import scala.math._
 import consts._
 
-class RecFNToIN(expWidth: Int, sigWidth: Int, intWidth: Int) extends Module
+class RecFNToIN(expWidth: Int, posWidth: Int, intWidth: Int) extends Module
 {
     val io = new Bundle {
-        val in = Bits(INPUT, expWidth + sigWidth + 1)
+        val in = Bits(INPUT, posWidth)
         val roundingMode = UInt(INPUT, 3)
         val signedOut = Bool(INPUT)
         val out = Bits(OUTPUT, intWidth)
@@ -53,7 +54,7 @@ class RecFNToIN(expWidth: Int, sigWidth: Int, intWidth: Int) extends Module
 
     //------------------------------------------------------------------------
     //------------------------------------------------------------------------
-    val rawIn = rawFloatFromRecFN(expWidth, sigWidth, io.in)
+    val rawIn = rawPositFromRecFN(expWidth, sigWidth, io.in)
 
     val magGeOne = rawIn.sExp(expWidth)
     val posExp = rawIn.sExp(expWidth - 1, 0)

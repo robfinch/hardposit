@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package an adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the
@@ -35,35 +36,35 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 import consts._
 
 class
     RecFNToRecFN(
-        inExpWidth: Int, inSigWidth: Int, outExpWidth: Int, outSigWidth: Int)
+        inExpWidth: Int, inPosWidth: Int, outExpWidth: Int, outPosWidth: Int)
     extends Module
 {
     val io = new Bundle {
-        val in = Bits(INPUT, inExpWidth + inSigWidth + 1)
+        val in = Bits(INPUT, inPosWidth)
         val roundingMode   = UInt(INPUT, 3)
         val detectTininess = UInt(INPUT, 1)
-        val out = Bits(OUTPUT, outExpWidth + outSigWidth + 1)
+        val out = Bits(OUTPUT, outPosWidth)
         val exceptionFlags = Bits(OUTPUT, 5)
     }
 
     //------------------------------------------------------------------------
     //------------------------------------------------------------------------
-    val rawIn = rawFloatFromRecFN(inExpWidth, inSigWidth, io.in);
-
-    if ((inExpWidth == outExpWidth) && (inSigWidth <= outSigWidth)) {
+    val rawIn = rawPositFromRecFN(inExpWidth, inPosWidth, io.in);
+    if (inPosWidth == outPosWidth) {
+      io.out := io.in
+    }
+    else if ((inExpWidth == outExpWidth) && (inSigWidth <= outSigWidth)) {
 
         //--------------------------------------------------------------------
         //--------------------------------------------------------------------
         io.out            := io.in<<(outSigWidth - inSigWidth)
-        io.exceptionFlags := Cat(isSigNaNRawFloat(rawIn), Bits(0, 4))
-
     } else {
 
         //--------------------------------------------------------------------

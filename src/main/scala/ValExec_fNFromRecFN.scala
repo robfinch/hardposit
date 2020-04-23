@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package and adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the
@@ -35,27 +36,27 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 
-class ValExec_fNFromRecFN(expWidth: Int, sigWidth: Int) extends Module
+class ValExec_fNFromRecFN(expWidth: Int, posWidth: Int) extends Module
 {
     val io = new Bundle {
-        val a = Bits(INPUT, expWidth + sigWidth)
-        val out = Bits(OUTPUT, expWidth + sigWidth)
+        val a = Bits(INPUT, posWidth - 1)
+        val out = Bits(OUTPUT, posWidth - 1)
         val check = Bool(OUTPUT)
         val pass = Bool(OUTPUT)
     }
 
     io.out :=
-        fNFromRecFN(expWidth, sigWidth, recFNFromFN(expWidth, sigWidth, io.a))
+        fNFromRecFN(expWidth, posWidth, recFNFromFN(expWidth, posWidth, io.a))
 
     io.check := Bool(true)
     io.pass := (io.out === io.a)
 }
 
-class ValExec_f16FromRecF16 extends ValExec_fNFromRecFN(5, 11)
-class ValExec_f32FromRecF32 extends ValExec_fNFromRecFN(8, 24)
-class ValExec_f64FromRecF64 extends ValExec_fNFromRecFN(11, 53)
+class ValExec_f16FromRecF16 extends ValExec_fNFromRecFN(2, 16)
+class ValExec_f32FromRecF32 extends ValExec_fNFromRecFN(3, 32)
+class ValExec_f64FromRecF64 extends ValExec_fNFromRecFN(4, 64)
 

@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package and adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
@@ -35,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 
@@ -90,6 +91,24 @@ object lowMask
 object countLeadingZeros
 {
     def apply(in: UInt): UInt = PriorityEncoder(in.asBools.reverse)
+}
+
+//----------------------------------------------------------------------------
+//  Returns the number of leading bits matching the first bit of the input
+// bitvector.
+//
+// @example {{{
+// countLeadingBits("b1110".U) // results in 3.U
+// countLeadingBits("b0001".U) // results in 3.U
+// }}}
+//----------------------------------------------------------------------------
+
+object countLeadingBits {
+
+  def apply(in: Seq[Bool]): UInt = PriorityMux(in.asBools.reverse, (in(in.size-1) until in.size).map(_.asUInt))
+
+  def apply(in: Bits): UInt = apply(in.asBools)
+
 }
 
 //----------------------------------------------------------------------------

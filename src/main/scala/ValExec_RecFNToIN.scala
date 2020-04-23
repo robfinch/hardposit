@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package an adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the
@@ -35,16 +36,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 
 class
-    ValExec_RecFNToUIN(expWidth: Int, sigWidth: Int, intWidth: Int)
+    ValExec_RecFNToUIN(expWidth: Int, posWidth: Int, intWidth: Int)
     extends Module
 {
     val io = new Bundle {
-        val in = Bits(INPUT, expWidth + sigWidth)
+        val in = Bits(INPUT, posWidth - 1)
         val roundingMode = UInt(INPUT, 3)
 
         val expected = new Bundle {
@@ -61,8 +62,8 @@ class
         val pass = Bool(OUTPUT)
     }
 
-    val recFNToIN = Module(new RecFNToIN(expWidth, sigWidth, intWidth))
-    recFNToIN.io.in := recFNFromFN(expWidth, sigWidth, io.in)
+    val recFNToIN = Module(new RecFNToIN(expWidth, posWidth, intWidth))
+    recFNToIN.io.in := recFNFromFN(expWidth, posWidth, io.in)
     recFNToIN.io.roundingMode := io.roundingMode
     recFNToIN.io.signedOut := Bool(false)
 
@@ -79,19 +80,19 @@ class
         (io.actual.exceptionFlags === io.expected.exceptionFlags)
 }
 
-class ValExec_RecF16ToUI32 extends ValExec_RecFNToUIN(5, 11, 32)
-class ValExec_RecF16ToUI64 extends ValExec_RecFNToUIN(5, 11, 64)
-class ValExec_RecF32ToUI32 extends ValExec_RecFNToUIN(8, 24, 32)
-class ValExec_RecF32ToUI64 extends ValExec_RecFNToUIN(8, 24, 64)
-class ValExec_RecF64ToUI32 extends ValExec_RecFNToUIN(11, 53, 32)
-class ValExec_RecF64ToUI64 extends ValExec_RecFNToUIN(11, 53, 64)
+class ValExec_RecF16ToUI32 extends ValExec_RecFNToUIN(2, 16, 32)
+class ValExec_RecF16ToUI64 extends ValExec_RecFNToUIN(2, 16, 64)
+class ValExec_RecF32ToUI32 extends ValExec_RecFNToUIN(3, 32, 32)
+class ValExec_RecF32ToUI64 extends ValExec_RecFNToUIN(3, 32, 64)
+class ValExec_RecF64ToUI32 extends ValExec_RecFNToUIN(4, 64, 32)
+class ValExec_RecF64ToUI64 extends ValExec_RecFNToUIN(4, 64, 64)
 
 class
-    ValExec_RecFNToIN(expWidth: Int, sigWidth: Int, intWidth: Int)
+    ValExec_RecFNToIN(expWidth: Int, posWidth: Int, intWidth: Int)
     extends Module
 {
     val io = new Bundle {
-        val in = Bits(INPUT, expWidth + sigWidth)
+        val in = Bits(INPUT, posWidth - 1)
         val roundingMode = UInt(INPUT, 3)
 
         val expected = new Bundle {
@@ -108,8 +109,8 @@ class
         val pass = Bool(OUTPUT)
     }
 
-    val recFNToIN = Module(new RecFNToIN(expWidth, sigWidth, intWidth))
-    recFNToIN.io.in := recFNFromFN(expWidth, sigWidth, io.in)
+    val recFNToIN = Module(new RecFNToIN(expWidth, posWidth, intWidth))
+    recFNToIN.io.in := recFNFromFN(expWidth, posWidth, io.in)
     recFNToIN.io.roundingMode := io.roundingMode
     recFNToIN.io.signedOut := Bool(true)
 
@@ -126,10 +127,10 @@ class
         (io.actual.exceptionFlags === io.expected.exceptionFlags)
 }
 
-class ValExec_RecF16ToI32 extends ValExec_RecFNToIN(5, 11, 32)
-class ValExec_RecF16ToI64 extends ValExec_RecFNToIN(5, 11, 64)
-class ValExec_RecF32ToI32 extends ValExec_RecFNToIN(8, 24, 32)
-class ValExec_RecF32ToI64 extends ValExec_RecFNToIN(8, 24, 64)
-class ValExec_RecF64ToI32 extends ValExec_RecFNToIN(11, 53, 32)
-class ValExec_RecF64ToI64 extends ValExec_RecFNToIN(11, 53, 64)
+class ValExec_RecF16ToI32 extends ValExec_RecFNToIN(2, 16, 32)
+class ValExec_RecF16ToI64 extends ValExec_RecFNToIN(2, 16, 64)
+class ValExec_RecF32ToI32 extends ValExec_RecFNToIN(3, 32, 32)
+class ValExec_RecF32ToI64 extends ValExec_RecFNToIN(3, 32, 64)
+class ValExec_RecF64ToI32 extends ValExec_RecFNToIN(4, 64, 32)
+class ValExec_RecF64ToI64 extends ValExec_RecFNToIN(4, 64, 64)
 

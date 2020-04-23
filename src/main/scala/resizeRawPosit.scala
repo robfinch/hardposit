@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package an adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
@@ -39,30 +40,33 @@ package hardposit
 
 import Chisel._
 
-object fNFromRecFN
+//----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
+
+object resizeRawPosit
 {
-    def apply(expWidth: Int, sigWidth: Int, in: Bits) =
+    def apply(expWidth: Int, posWidth: Int, in: RawPosit): RawPosit =
     {
-        val minNormExp = (BigInt(1)<<(expWidth - 1)) + 2
+        val sAdjustedExp =
+            in.sExp +& SInt((BigInt(1)<<expWidth) - (BigInt(1)<<in.expWidth))
 
-        val rawIn = rawFloatFromRecFN(expWidth, sigWidth, in)
-
-        val isSubnormal = (rawIn.sExp < SInt(minNormExp))
-        val denormShiftDist = UInt(1) - rawIn.sExp(log2Up(sigWidth - 1) - 1, 0)
-        val denormFract = ((rawIn.sig>>1)>>denormShiftDist)(sigWidth - 2, 0)
-
-        val expOut =
-            Mux(isSubnormal,
-                UInt(0),
-                rawIn.sExp(expWidth - 1, 0) -
-                    UInt((BigInt(1)<<(expWidth - 1)) + 1)
-            ) | Fill(expWidth, rawIn.isNaN || rawIn.isInf)
-        val fractOut =
-            Mux(isSubnormal,
-                denormFract,
-                Mux(rawIn.isInf, UInt(0), rawIn.sig(sigWidth - 2, 0))
-            )
-        Cat(rawIn.sign, expOut, fractOut)
+        val out = Wire(new RawPosit(expWidth, posWidth))
+        out.sign   := in.sign
+        out.isNaR  := in.isNaR
+        out.isInf  := in.isInf
+        out.isZero := in.isZero
+        val rx = Cat(in.regime,in.sExp)
+        out.regsign = in.regsign
+        out.regime = rx(log2Up(posWidth)-1,expWidth)
+        out.sExp = rx(expWidth-1:0)
+        out.sig :=
+            (if (in.sigWidth <= sigWidth)
+                 in.sig<<(sigWidth - in.sigWidth)
+             else
+                 Cat(in.sig(in.sigWidth - 1, in.sigWidth - sigWidth + 1),
+                     in.sig(in.sigWidth - sigWidth, 0).orR
+                 ))
+        out
     }
 }
 
