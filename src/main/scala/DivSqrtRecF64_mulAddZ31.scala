@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package an adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
@@ -35,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-package hardfloat
+package hardposit
 
 import Chisel._
 import consts._

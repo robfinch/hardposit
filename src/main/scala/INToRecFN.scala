@@ -43,34 +43,34 @@ import consts._
 
 class INToRecFN(intWidth: Int, expWidth: Int, posWidth: Int) extends Module
 {
-    val io = new Bundle {
-        val signedIn = Bool(INPUT)
-        val in = Bits(INPUT, intWidth)
-        val roundingMode   = UInt(INPUT, 3)
-        val detectTininess = UInt(INPUT, 1)
-        val out = Bits(OUTPUT, expWidth + sigWidth + 1)
-        val exceptionFlags = Bits(OUTPUT, 5)
-    }
+  val io = new Bundle {
+    val signedIn = Bool(INPUT)
+    val in = Bits(INPUT, intWidth)
+    val roundingMode   = UInt(INPUT, 3)
+    val detectTininess = UInt(INPUT, 1)
+    val out = Bits(OUTPUT, posWidth)
+    val exceptionFlags = Bits(OUTPUT, 5)
+  }
 
-    //------------------------------------------------------------------------
-    //------------------------------------------------------------------------
-    val intAsRawFloat = rawPositFromIN(io.signedIn, io.in);
+  //------------------------------------------------------------------------
+  //------------------------------------------------------------------------
+  val intAsRawPosit = rawPositFromIN(io.signedIn, io.in);
 
-    val roundAnyRawFNToRecFN =
-        Module(
-            new RoundAnyRawFNToRecFN(
-                    intAsRawFloat.expWidth,
-                    intWidth,
-                    expWidth,
-                    posWidth,
-                    flRoundOpt_sigMSBitAlwaysZero | flRoundOpt_neverUnderflows
-                ))
-    roundAnyRawFNToRecFN.io.invalidExc     := Bool(false)
-    roundAnyRawFNToRecFN.io.infiniteExc    := Bool(false)
-    roundAnyRawFNToRecFN.io.in             := intAsRawFloat
-    roundAnyRawFNToRecFN.io.roundingMode   := io.roundingMode
-    roundAnyRawFNToRecFN.io.detectTininess := io.detectTininess
-    io.out            := roundAnyRawFNToRecFN.io.out
-    io.exceptionFlags := roundAnyRawFNToRecFN.io.exceptionFlags
+  val roundAnyRawFNToRecFN =
+    Module(
+      new RoundAnyRawFNToRecFN(
+        intAsRawPosit.expWidth,
+        intWidth,
+        expWidth,
+        posWidth,
+        flRoundOpt_sigMSBitAlwaysZero | flRoundOpt_neverUnderflows
+      ))
+  roundAnyRawFNToRecFN.io.invalidExc     := Bool(false)
+  roundAnyRawFNToRecFN.io.infiniteExc    := Bool(false)
+  roundAnyRawFNToRecFN.io.in             := intAsRawPosit
+  roundAnyRawFNToRecFN.io.roundingMode   := io.roundingMode
+  roundAnyRawFNToRecFN.io.detectTininess := io.detectTininess
+  io.out            := roundAnyRawFNToRecFN.io.out
+  io.exceptionFlags := roundAnyRawFNToRecFN.io.exceptionFlags
 }
 

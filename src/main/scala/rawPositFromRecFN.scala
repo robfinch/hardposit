@@ -60,6 +60,7 @@ object rawPositFromRecFN
     out.sExp   := exp.zext
     out.regsign := n(posWidth-2)
     out.regime := Mux(n(posWidth-2),rgmlen,rgmlen-1)
+    out.sigWidth := Max(0,posWidth - rgmlen - expWidth)
     if (posWidth - rgmlen - expWidth - 1 >= 0)
       out.sig  := n(posWidth - rgmlen - expWidth - 1,0)
     else

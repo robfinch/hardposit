@@ -1,8 +1,9 @@
 
 /*============================================================================
 
-This Chisel source file is part of a pre-release version of the HardFloat IEEE
-Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
+This Chisel source file is part of a pre-release version of the HardPosit
+Arithmetic Package an adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
@@ -41,28 +42,13 @@ import Chisel._
 
 object fNFromRecFN
 {
-    def apply(expWidth: Int, sigWidth: Int, in: Bits) =
-    {
-        val minNormExp = (BigInt(1)<<(expWidth - 1)) + 2
-
-        val rawIn = rawFloatFromRecFN(expWidth, sigWidth, in)
-
-        val isSubnormal = (rawIn.sExp < SInt(minNormExp))
-        val denormShiftDist = UInt(1) - rawIn.sExp(log2Up(sigWidth - 1) - 1, 0)
-        val denormFract = ((rawIn.sig>>1)>>denormShiftDist)(sigWidth - 2, 0)
-
-        val expOut =
-            Mux(isSubnormal,
-                UInt(0),
-                rawIn.sExp(expWidth - 1, 0) -
-                    UInt((BigInt(1)<<(expWidth - 1)) + 1)
-            ) | Fill(expWidth, rawIn.isNaN || rawIn.isInf)
-        val fractOut =
-            Mux(isSubnormal,
-                denormFract,
-                Mux(rawIn.isInf, UInt(0), rawIn.sig(sigWidth - 2, 0))
-            )
-        Cat(rawIn.sign, expOut, fractOut)
-    }
+  def apply(expWidth: Int, posWidth: Int, in: Bits) =
+  {
+    val rawIn = rawPositFromRecFN(expWidth, posWidth, in)
+    val rbs = ((BigInt(1) << (regime + 1)) - 2)(regime + 1, 0)
+    val rgmOut = Mux(rawIn.regsign,rbs,~rbs)
+    val expOut = rawIn.sExp(expWidth - 1, 0)
+    val sigOut = (rawIn.sigWidth - 2, 0)
+    Mux(rawIn.sign,-Cat(0, rgmOut, expOut, sigOut),Cat(0, rgmOut, expOut, sigOut))
+  }
 }
-

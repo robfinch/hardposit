@@ -3,6 +3,7 @@
 
 This Chisel source file is part of a pre-release version of the HardPosit
 Arithmetic Package and adpatation of the HardFloat package, by John R. Hauser
+(with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the
@@ -41,24 +42,24 @@ import Chisel._
 
 class CompareRecFN(expWidth: Int, posWidth: Int) extends Module
 {
-    val io = new Bundle {
-        val a = Bits(INPUT, posWidth)
-        val b = Bits(INPUT, posWidth)
-        val signaling = Bool(INPUT)
-        val lt = Bool(OUTPUT)
-        val eq = Bool(OUTPUT)
-        val gt = Bool(OUTPUT)
-    }
+  val io = new Bundle {
+    val a = Bits(INPUT, posWidth)
+    val b = Bits(INPUT, posWidth)
+    val signaling = Bool(INPUT)
+    val lt = Bool(OUTPUT)
+    val eq = Bool(OUTPUT)
+    val gt = Bool(OUTPUT)
+  }
 
-    val rawA = rawPositFromRecFN(expWidth, posWidth, io.a)
-    val rawB = rawPositFromRecFN(expWidth, posWidth, io.b)
+  val rawA = rawPositFromRecFN(expWidth, posWidth, io.a)
+  val rawB = rawPositFromRecFN(expWidth, posWidth, io.b)
 
-    val ordered = ! rawA.isNaR && ! rawB.isNaR
+  val ordered = ! rawA.isNaR && ! rawB.isNaR
 
-    val ordered_lt = a < b
-    val ordered_eq = a === b
+  val ordered_lt = a < b
+  val ordered_eq = a === b
 
-    io.lt := ordered && ordered_lt
-    io.eq := ordered && ordered_eq
-    io.gt := ordered && ! ordered_lt && ! ordered_eq
+  io.lt := ordered && ordered_lt
+  io.eq := ordered && ordered_eq
+  io.gt := ordered && ! ordered_lt && ! ordered_eq
 }

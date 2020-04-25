@@ -34,7 +34,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-ToDo: Convert to a standard posit, calc regime
+
 =============================================================================*/
 
 package hardposit
@@ -43,30 +43,103 @@ import Chisel._
 
 object rawPositFromIN
 {
-    def apply(signedIn: Bool, in: Bits): RawPosit =
-    {
-        val expWidth = log2Up(in.getWidth) + 1
-//*** CHANGE THIS; CAN BE VERY LARGE:
-        val extIntWidth = 1<<(expWidth - 1)
+  def apply(signedIn: Bool, in: Bits): RawPosit =
+  {
+    val sign := signedIn && in(in.getWidth - 1)
+    val absIn := Mux(sign, -in.asUInt, in.asUInt)
 
-        val sign = signedIn && in(in.getWidth - 1)
-        val absIn = Mux(sign, -in.asUInt, in.asUInt)
-        val extAbsIn = Cat(UInt(0, extIntWidth), absIn)(extIntWidth - 1, 0)
-        val adjustedNormDist = countLeadingZeros(extAbsIn)
-        val sig =
-            (extAbsIn<<adjustedNormDist)(
-                extIntWidth - 1, extIntWidth - in.getWidth)
+    val extIntWidth
+    val posWidth
+    val regsign
+    val regime
+    val expWidth
+    val sExp
+    val sigWidth
 
-        val out = Wire(new RawPosit(expWidth, in.getWidth + expWidth + 3))
-        out.isNaR  := Bool(false)
-        out.isInf  := Bool(false)
-        out.isZero := ! sig(in.getWidth - 1)
-        out.regsign := UInt(1)
-        out.regime := UInt(2)
-        out.sign   := sign
-        out.sExp   := Cat(UInt(2, 2), ~adjustedNormDist(expWidth - 2, 0)).zext
-        out.sig    := sig
-        out
+    if (in.getWidth < 9) {
+      extIntWidth := 8
+      sigWidth := UInt(8)
     }
-}
+    else if (in.getWidth < 17) {
+      extIntWidth := 16
+      sigWidth := UInt(16)
+    }
+    else if (in.getWidth < 33) {
+      extIntWidth := 32
+      sigWidth := UInt(32)
+    }
+    else if (in.getWidth < 65) {
+      extIntWidth := 64
+      sigWidth := UInt(64)
+    }
+    else {
+      extIntWidth = in.getWidth
+      sigWidth = in.getWidth
+    }
 
+    val extAbsIn := Cat(UInt(0,extIntWidth),absIn)(extIntWidth-1, 0)
+    val adjustedNormDist := countLeadingZeros(extAbsIn)
+    val sig := (extAbsIn<<adjustedNormDist)(extIntWidth-1, extIntWidth - in.getWidth)
+    val tz := PriorityEncoder(sig)  // count trailing zeros
+
+    // Attempt to fit into a standard size posit
+    sigWidth := sig.width - tz
+    regime := -adjustedNormDist
+    val canFitIn8 = (sigWidth + regime + 2 + 1) <= 8
+    regime := -(adjustedNormDist >> 1)
+    val canFitIn16 = (sigWidth + regime + 2 + 1 + 1) <= 16
+    regime := -(adjustedNormDist >> 2)
+    val canFitIn32 = (sigWidth + regime + 2 + 1 + 2) <= 32
+    regime := -(adjustedNormDist >> 3)
+    val canFitIn64 = (sigWidth + regime + 2 + 1 + 3) <= 64
+
+    if (canFitIn8) {
+      sExp := UInt(0)
+      expWidth := UInt(0)
+      regsign := if (adjustedNormDist > 0) UInt(0,1) else UInt(1,1)
+      regime := -adjustedNormDist
+      posWidth := UInt(8)
+    }
+    else if (canFitIn16) {
+      sExp := UInt(adjustedNormDist & 1,1)
+      expWidth := UInt(1)
+      regsign := if ((adjustedNormDist >> 1) > 0) UInt(0,1) else UInt(1,1)
+      regime = -(adjustedNormDist >> 1)
+      posWidth := UInt(16)
+    }
+    else if (canFitIn32) {
+      sExp := UInt(adjustedNormDist & 3,2)
+      expWidth := UInt(2)
+      regsign := if ((adjustedNormDist >> 2) > 0) UInt(0,1) else UInt(1,1)
+      regime = -(adjustedNormDist >> 2)
+      posWidth := UInt(32)
+    }
+    else if (canFitIn64) {
+      sExp := UInt(adjustedNormDist & 7,3)
+      expWidth := UInt(3)
+      regsign := if ((adjustedNormDist >> 3) > 0) UInt(0,1) else UInt(1,1)
+      regime = -(adjustedNormDist >> 3)
+      posWidth := UInt(64)
+    }
+    else {
+      sExp := UInt(adjustedNormDist & 15,4)
+      expWidth := UInt(4)
+      regsign := if ((adjustedNormDist >> 4) > 0) UInt(0,1) else UInt(1,1)
+      regime = -(adjustedNormDist >> 4)
+      posWidth := sigWidth + adjustedNormDist + 1 + 1 + expWidth
+    }
+    sig := sig(sig.width-1,tz)
+
+    val out = Wire(new RawPosit(expWidth, posWidth))
+    out.isNaR := Bool(false)
+    out.isInf := Bool(false)
+    out.isZero := in.asUInt === UInt(0)
+    out.sign := sign
+    out.regsign := regsign
+    out.regime := regime
+    out.sExp   := sExp
+    out.sigWidth := sigWidth
+    out.sig    := sig
+    out
+  }
+}

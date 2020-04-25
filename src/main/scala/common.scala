@@ -2,7 +2,7 @@
 /*============================================================================
 
 This Chisel source file is part of a pre-release version of the HardPosit
-Arithmetic Package and adpatation of the HardFloat package, by John R. Hauser
+Arithmetic Package an adpatation of the HardFloat package, by John R. Hauser
 (with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
@@ -41,58 +41,58 @@ package hardposit
 import Chisel._
 
 object consts {
-    /*------------------------------------------------------------------------
-    | For rounding to integer values, rounding mode 'odd' rounds to minimum
-    | magnitude instead, same as 'minMag'.
-    *------------------------------------------------------------------------*/
-    def round_near_even   = UInt("b000", 3)
-    def round_minMag      = UInt("b001", 3)
-    def round_min         = UInt("b010", 3)
-    def round_max         = UInt("b011", 3)
-    def round_near_maxMag = UInt("b100", 3)
-    def round_odd         = UInt("b110", 3)
-    /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
-    def tininess_beforeRounding = UInt(0, 1)
-    def tininess_afterRounding  = UInt(1, 1)
-    /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
-    def flRoundOpt_sigMSBitAlwaysZero  = 1
-    def flRoundOpt_subnormsAlwaysExact = 2
-    def flRoundOpt_neverUnderflows     = 4
-    def flRoundOpt_neverOverflows      = 8
+  /*------------------------------------------------------------------------
+  | For rounding to integer values, rounding mode 'odd' rounds to minimum
+  | magnitude instead, same as 'minMag'.
+  *------------------------------------------------------------------------*/
+  def round_near_even   = UInt("b000", 3)
+  def round_minMag      = UInt("b001", 3)
+  def round_min         = UInt("b010", 3)
+  def round_max         = UInt("b011", 3)
+  def round_near_maxMag = UInt("b100", 3)
+  def round_odd         = UInt("b110", 3)
+  /*------------------------------------------------------------------------
+  *------------------------------------------------------------------------*/
+  def tininess_beforeRounding = UInt(0, 1)
+  def tininess_afterRounding  = UInt(1, 1)
+  /*------------------------------------------------------------------------
+  *------------------------------------------------------------------------*/
+  def flRoundOpt_sigMSBitAlwaysZero  = 1
+  def flRoundOpt_subnormsAlwaysExact = 2
+  def flRoundOpt_neverUnderflows     = 4
+  def flRoundOpt_neverOverflows      = 8
 }
 
 class RawPosit(val expWidth: Int, val posWidth: Int) extends Bundle
 {
-    val isNaR  = Bool()              // overrides all other fields
-    val isInf  = Bool()              // overrides 'isZero', 'sExp', and 'sig'
-    val isZero = Bool()              // overrides 'sExp' and 'sig'
-    val sign   = Bool()
-    val sExp = SInt(width = expWidth + 2)
-    val regsign = Bool()
-    val regime = UInt(width = log2Up(posWidth))
-    val sigWidth = posWidth - expWidth - 2 + 1
-    val sig  = UInt(width = posWidth - expWidth - 2 + 1) // min regime = 10 or 01 (2 bits)
+  val isNaR  = Bool()              // overrides all other fields
+  val isInf  = Bool()              // overrides 'isZero', 'sExp', and 'sig'
+  val isZero = Bool()              // overrides 'sExp' and 'sig'
+  val sign   = Bool()
+  val regsign = Bool()
+  val regime = UInt(width = log2Up(posWidth))
+  val sExp = SInt(width = expWidth + 2)
+  val sigWidth = posWidth - expWidth - 2 + 1
+  val sig  = UInt(width = posWidth - expWidth - 2 + 1) // min regime = 10 or 01 (2 bits)
 
-    override def cloneType =
-        new RawPosit(expWidth, posWidth).asInstanceOf[this.type]
+  override def cloneType =
+      new RawPosit(expWidth, posWidth).asInstanceOf[this.type]
 }
 
 // Double significand for fused operations
 class RawPositDblSig(val expWidth: Int, val posWidth: Int) extends Bundle
 {
-    val isNaR  = Bool()              // overrides all other fields
-    val isInf  = Bool()              // overrides 'isZero', 'sExp', and 'sig'
-    val isZero = Bool()              // overrides 'sExp' and 'sig'
-    val sign   = Bool()
-    val regsign = Bool()
-    val regime = UInt(width = log2Up(posWidth))
-    val sExp = SInt(width = expWidth + 2)
-    val sigWidth = (posWidth - expWidth - 2) * 2 + 1
-    val sig  = UInt(width = (posWidth - expWidth - 2) * 2 + 1) // min regime = 10 or 01 (2 bits)
+  val isNaR  = Bool()              // overrides all other fields
+  val isInf  = Bool()              // overrides 'isZero', 'sExp', and 'sig'
+  val isZero = Bool()              // overrides 'sExp' and 'sig'
+  val sign   = Bool()
+  val regsign = Bool()
+  val regime = UInt(width = log2Up(posWidth))
+  val sExp = SInt(width = expWidth + 2)
+  val sigWidth = (posWidth - expWidth - 2) * 2 + 1
+  val sig  = UInt(width = (posWidth - expWidth - 2) * 2 + 1) // min regime = 10 or 01 (2 bits)
 
-    override def cloneType =
-        new RawPositDblSig(expWidth, posWidth).asInstanceOf[this.type]
+  override def cloneType =
+      new RawPositDblSig(expWidth, posWidth).asInstanceOf[this.type]
 }
 

@@ -42,34 +42,34 @@ import Chisel._
 
 object rawPositFromFN
 {
-    def apply(expWidth: Int, posWidth: Int, in: Bits) =
-    {
-        val sign = in(posWidth - 1)
-        val reglen = in(posWidth-2,0).countLeadingBits() + 1
-        val regsign = in(posWidth-2)
-        val regimeIn = Mux(regsign,reglen,reglen-1)
-        val expIn = in(posWidth - reglen -1, posWidth - reglen - expWidth)
-        val fractIn = in(posWidth - reglen - expWidth - 1, 0)
+  def apply(expWidth: Int, posWidth: Int, in: Bits) =
+  {
+    val sign = in(posWidth - 1)
+    val reglen = in(posWidth-2,0).countLeadingBits() + 1
+    val regsign = in(posWidth-2)
+    val regimeIn = Mux(regsign,reglen,reglen-1)
+    val expIn = in(posWidth - reglen -1, posWidth - reglen - expWidth)
+    val fractIn = in(posWidth - reglen - expWidth - 1, 0)
 
-        val isZeroExpIn = (expIn === UInt(0))
-        val isZeroFractIn = (fractIn === UInt(0))
+    val isZeroExpIn = (expIn === UInt(0))
+    val isZeroFractIn = (fractIn === UInt(0))
 
-        val normDist = 0
-        val adjustedExp = expIn
+    val normDist = 0
+    val adjustedExp = expIn
 
-        val isZero = in === UInt(0)
-        val isSpecial = in(posWidth-1) === UInt(1) && in(posWidth-2,0) === UInt(0)
+    val isZero = in === UInt(0)
+    val isSpecial = in(posWidth-1) === UInt(1) && in(posWidth-2,0) === UInt(0)
 
-        val out = Wire(new RawPosit(expWidth, posWidth))
-        out.isNaR  := isSpecial
-        out.isInf  := isSpecial
-        out.isZero := isZero
-        out.sign   := sign
-        out.regsign := regsign
-        out.regime := regimeIn
-        out.sExp   := adjustedExp(expWidth, 0).zext
-        out.sig    := Cat(UInt(0,1),1,fractIn)
-        out
-    }
+    val out = Wire(new RawPosit(expWidth, posWidth))
+    out.isNaR  := isSpecial
+    out.isInf  := isSpecial
+    out.isZero := isZero
+    out.sign   := sign
+    out.regsign := regsign
+    out.regime := regimeIn
+    out.sExp   := adjustedExp(expWidth, 0).zext
+    out.sig    := Cat(UInt(0,1),1,fractIn)
+    out
+  }
 }
 

@@ -46,23 +46,24 @@ import consts._
 
 class FusedDotProdRecFN_interIo(expWidth: Int, posWidth: Int) extends Bundle
 {
-//*** ENCODE SOME OF THESE CASES IN FEWER BITS?:
-    val isSigNaNAny     = Bool()
-    val isNaNAOrB       = Bool()
+    val isNaRAOrB       = Bool()
+    val isNaRCOrD       = Bool()
     val isInfA          = Bool()
     val isZeroA         = Bool()
     val isInfB          = Bool()
     val isZeroB         = Bool()
-    val signProd        = Bool()
-    val isNaNC          = Bool()
     val isInfC          = Bool()
     val isZeroC         = Bool()
+    val isInfD          = Bool()
+    val isZeroD         = Bool()
+    val signProdAB      = Bool()
+    val signProdCD      = Bool()
     val sExpSum         = SInt(width = expWidth + 2)
     val doSubMags       = Bool()
-    val CIsDominant     = Bool()
-    val CDom_CAlignDist = UInt(width = log2Up((posWidth - expWidth - 2) + 1))
-    val highAlignedSigC = UInt(width = (posWidth - expWidth - 2) + 2)
-    val bit0AlignedSigC = UInt(width = 1)
+    val CDIsDominant     = Bool()
+    val CDDom_CDAlignDist = UInt(width = log2Up((posWidth - expWidth - 2) + 1))
+    val highAlignedSigCD = UInt(width = (posWidth - expWidth - 2) + 2)
+    val bit0AlignedSigCD = UInt(width = 1)
 
     override def cloneType =
         new FusedDotProdRecFN_interIo(
@@ -87,71 +88,73 @@ class FusedDotProdRecFNToRaw_preMul(expWidth: Int, posWidth: Int) extends Module
     val toPostFDP = new FusedDotProdRecFN_interIo(expWidth, posWidth).asOutput
   }
 
-    //------------------------------------------------------------------------
-    //------------------------------------------------------------------------
+  //------------------------------------------------------------------------
+  //------------------------------------------------------------------------
 //*** POSSIBLE TO REDUCE THIS BY 1 OR 2 BITS?  (CURRENTLY 2 BITS BETWEEN
 //***  UNSHIFTED C AND PRODUCT):
-    val sigSumWidth = sigWidth * 3 + 3
+  val sigSumWidth = sigWidth * 3 + 3
 
-    //------------------------------------------------------------------------
-    //------------------------------------------------------------------------
-    val rawA = rawPositFromRecFN(expWidth, posWidth, io.a)
-    val rawB = rawPositFromRecFN(expWidth, posWidth, io.b)
-    val rawC = rawPositFromRecFN(expWidth, posWidth, io.c)
-    val rawD = rawPositFromRecFN(expWidth, posWidth, io.d)
+  //------------------------------------------------------------------------
+  //------------------------------------------------------------------------
+  val rawA = rawPositFromRecFN(expWidth, posWidth, io.a)
+  val rawB = rawPositFromRecFN(expWidth, posWidth, io.b)
+  val rawC = rawPositFromRecFN(expWidth, posWidth, io.c)
+  val rawD = rawPositFromRecFN(expWidth, posWidth, io.d)
 
-    val signProdAB = rawA.sign ^ rawB.sign ^ io.op(1)
-    val signProdCD = rawC.sign ^ rawD.sign
+  val signProdAB = rawA.sign ^ rawB.sign ^ io.op(1)
+  val signProdCD = rawC.sign ^ rawD.sign
 //*** REVIEW THE BIAS FOR 'sExpAlignedProd':
-    val rgma = Mux(rawA.regsign,rawA.regime,-rawA.regime)
-    val rgmb = Mux(rawB.regsign,rawB.regime,-rawB.regime)
-    val rgmc = Mux(rawC.regsign,rawC.regime,-rawC.regime)
-    val rgmd = Mux(rawD.regsign,rawD.regime,-rawD.regime)
-    val expa = Cat(rgma,rawA.sExp)
-    val expb = Cat(rgmb,rawB.sExp)
-    val expc = Cat(rgmc,rawC.sExp)
-    val expd = Cat(rgmd,rawD.sExp)
-    val sExpAlignedProdAB =
-        rawA.sExp +& rawB.sExp + SInt(-(BigInt(1)<<expWidth) + sigWidth + 3)
+  val rgma = Mux(rawA.regsign,rawA.regime,-rawA.regime)
+  val rgmb = Mux(rawB.regsign,rawB.regime,-rawB.regime)
+  val rgmc = Mux(rawC.regsign,rawC.regime,-rawC.regime)
+  val rgmd = Mux(rawD.regsign,rawD.regime,-rawD.regime)
+  val expa = Cat(rgma,rawA.sExp)
+  val expb = Cat(rgmb,rawB.sExp)
+  val expc = Cat(rgmc,rawC.sExp)
+  val expd = Cat(rgmd,rawD.sExp)
+  val sExpAlignedProdAB =
+    expa +& expb + SInt(-(BigInt(1)<<expWidth) + sigWidth + 3)
+  val sExpAlignedProdCD =
+    expc +& expd + SInt(-(BigInt(1)<<expWidth) + sigWidth + 3)
 
-    val doSubMags = signProdAB ^ signProdCD ^ io.op(0)
+  val doSubMags = signProdAB ^ signProdCD ^ io.op(0)
 
-    //------------------------------------------------------------------------
-    //------------------------------------------------------------------------
-    val sNatCAlignDist = sExpAlignedProd - rawC.sExp
-    val posNatCAlignDist = sNatCAlignDist(expWidth + 1, 0)
-    val isMinCAlign = rawA.isZero || rawB.isZero || (sNatCAlignDist < SInt(0))
-    val CIsDominant =
-        ! rawC.isZero && (isMinCAlign || (posNatCAlignDist <= UInt(sigWidth)))
-    val CAlignDist =
-        Mux(isMinCAlign,
-            UInt(0),
-            Mux(posNatCAlignDist < UInt(sigSumWidth - 1),
-                posNatCAlignDist(log2Up(sigSumWidth) - 1, 0),
-                UInt(sigSumWidth - 1)
-            )
-        )
-    val mainAlignedSigC =
-        Cat(Mux(doSubMags, ~rawC.sig, rawC.sig),
-            Fill(sigSumWidth - sigWidth + 2, doSubMags)
-        ).asSInt>>CAlignDist
-    val reduced4CExtra =
-        (orReduceBy4(rawC.sig<<((sigSumWidth - sigWidth - 1) & 3)) &
-             lowMask(
-                 CAlignDist>>2,
+  //------------------------------------------------------------------------
+  //------------------------------------------------------------------------
+  val sNatCAlignDist = sExpAlignedProdAB - sExpAlignedProdCD
+  val posNatCAlignDist = sNatCAlignDist(expWidth + 1, 0)
+  val isMinCAlign = rawA.isZero || rawB.isZero || (sNatCAlignDist < SInt(0))
+  val CIsDominant =
+      ! rawC.isZero && (isMinCAlign || (posNatCAlignDist <= UInt(sigWidth)))
+  val CAlignDist =
+      Mux(isMinCAlign,
+          UInt(0),
+          Mux(posNatCAlignDist < UInt(sigSumWidth - 1),
+              posNatCAlignDist(log2Up(sigSumWidth) - 1, 0),
+              UInt(sigSumWidth - 1)
+          )
+      )
+  val mainAlignedSigC =
+      Cat(Mux(doSubMags, ~rawC.sig, rawC.sig),
+          Fill(sigSumWidth - sigWidth + 2, doSubMags)
+      ).asSInt>>CAlignDist
+  val reduced4CExtra =
+      (orReduceBy4(rawC.sig<<((sigSumWidth - sigWidth - 1) & 3)) &
+           lowMask(
+               CAlignDist>>2,
 //*** NOT NEEDED?:
 //                 (sigSumWidth + 2)>>2,
-                 (sigSumWidth - 1)>>2,
-                 (sigSumWidth - sigWidth - 1)>>2
-             )
-        ).orR
-    val alignedSigC =
-        Cat(mainAlignedSigC>>3,
-            Mux(doSubMags,
-                mainAlignedSigC(2, 0).andR && ! reduced4CExtra,
-                mainAlignedSigC(2, 0).orR  ||   reduced4CExtra
-            )
-        )
+               (sigSumWidth - 1)>>2,
+               (sigSumWidth - sigWidth - 1)>>2
+           )
+      ).orR
+  val alignedSigC =
+      Cat(mainAlignedSigC>>3,
+          Mux(doSubMags,
+              mainAlignedSigC(2, 0).andR && ! reduced4CExtra,
+              mainAlignedSigC(2, 0).orR  ||   reduced4CExtra
+          )
+      )
 
     //------------------------------------------------------------------------
     //------------------------------------------------------------------------
@@ -176,9 +179,9 @@ class FusedDotProdRecFNToRaw_preMul(expWidth: Int, posWidth: Int) extends Module
     io.toPostMul.isZeroD   := rawD.isZero
     io.toPostMul.signProdAB  := signProdAB
     io.toPostMul.signProdCD  := signProdCD
-    io.toPostMul.isNaNR    := rawC.isNaR
-    io.toPostMul.isInfC    := rawC.isInf
-    io.toPostMul.isZeroC   := rawC.isZero
+    io.toPostMul.isNaNR    := rawE.isNaR
+    io.toPostMul.isInfE    := rawE.isInf
+    io.toPostMul.isZeroE   := rawE.isZero
     io.toPostMul.sExpSum   :=
         Mux(CIsDominant, rawC.sExp, sExpAlignedProd - SInt(sigWidth))
     io.toPostMul.doSubMags := doSubMags
@@ -300,7 +303,7 @@ class FusedDotProdRecFNToRaw_postMul(expWidth: Int, posWidth: Int) extends Modul
            (io.fromPreMul.isInfA || io.fromPreMul.isInfB) &&
            io.fromPreMul.isInfC &&
            io.fromPreMul.doSubMags)
-  io.rawOut.isNaN := io.fromPreMul.isNaNAOrB || io.fromPreMul.isNaNC
+  io.rawOut.isNaR := io.fromPreMul.isNaRAOrB || io.fromPreMul.isNaRCOrD
   io.rawOut.isInf := notNaN_isInfOut
 //*** IMPROVE?:
   io.rawOut.isZero :=
@@ -324,13 +327,12 @@ class FusedDotProdRecFNToRaw_postMul(expWidth: Int, posWidth: Int) extends Modul
 
 class FusedDotProdRecFN(expWidth: Int, posWidth: Int) extends Module
 {
-  val sigWidth = posWidth - expWidth - 2
   val io = new Bundle {
     val op = Bits(INPUT, 2)
     val a = Bits(INPUT, posWidth)
     val b = Bits(INPUT, posWidth)
     val c = Bits(INPUT, posWidth)
-    val c = Bits(INPUT, posWidth)
+    val d = Bits(INPUT, posWidth)
     val roundingMode   = UInt(INPUT, 3)
     val detectTininess = UInt(INPUT, 1)
     val out = Bits(OUTPUT, posWidth)
@@ -340,15 +342,15 @@ class FusedDotProdRecFN(expWidth: Int, posWidth: Int) extends Module
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------
   val FusedDotProdRecFNToRaw_preMul =
-      Module(new FusedDotProdRecFNToRaw_preMul(expWidth, sigWidth))
+      Module(new FusedDotProdRecFNToRaw_preMul(expWidth, posWidth))
   val FusedDotProdRecFNToRaw_postMul =
-      Module(new FusedDotProdRecFNToRaw_postMul(expWidth, sigWidth))
+      Module(new FusedDotProdRecFNToRaw_postMul(expWidth, posWidth))
 
-  mulAddRecFNToRaw_preMul.io.op := io.op
-  mulAddRecFNToRaw_preMul.io.a  := io.a
-  mulAddRecFNToRaw_preMul.io.b  := io.b
-  mulAddRecFNToRaw_preMul.io.c  := io.c
-  mulAddRecFNToRaw_preMul.io.d  := io.d
+  FusedDotProdRecFNToRaw_preMul.io.op := io.op
+  FusedDotProdRecFNToRaw_preMul.io.a  := io.a
+  FusedDotProdRecFNToRaw_preMul.io.b  := io.b
+  FusedDotProdRecFNToRaw_preMul.io.c  := io.c
+  FusedDotProdRecFNToRaw_preMul.io.d  := io.d
 
   val FusedDotProdResult =
     (FusedDotProdRecFNToRaw_preMul.io.mulAddA *
@@ -364,7 +366,7 @@ class FusedDotProdRecFN(expWidth: Int, posWidth: Int) extends Module
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------
   val roundRawFNToRecFN =
-      Module(new RoundRawFNToRecFN(expWidth, sigWidth, 0))
+      Module(new RoundRawFNToRecFN(expWidth, posWidth, 0))
   roundRawFNToRecFN.io.invalidExc   := FusedDotProdRecFNToRaw_postMul.io.invalidExc
   roundRawFNToRecFN.io.infiniteExc  := Bool(false)
   roundRawFNToRecFN.io.in           := FusedDotProdRecFNToRaw_postMul.io.rawOut

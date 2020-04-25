@@ -45,105 +45,105 @@ import consts._
 //----------------------------------------------------------------------------
 
 class
-    RoundAnyRawFNToRecFN(
-        inExpWidth: Int,
-        inPosWidth: Int,
-        outExpWidth: Int,
-        outPosWidth: Int,
-        options: Int
-    )
-    extends Module
+  RoundAnyRawFNToRecFN(
+    inExpWidth: Int,
+    inPosWidth: Int,
+    outExpWidth: Int,
+    outPosWidth: Int,
+    options: Int
+  )
+  extends Module
 {
-    val io = new Bundle {
-        val invalidExc  = Bool(INPUT)   // overrides 'infiniteExc' and 'in'
-        val infiniteExc = Bool(INPUT)   // overrides 'in' except for 'in.sign'
-        val in = new RawPosit(inExpWidth, inPosWidth).asInput
-                                        // (allowed exponent range has limits)
-        val roundingMode   = UInt(INPUT, 3)
-        val detectTininess = UInt(INPUT, 1)
-        val out = Bits(OUTPUT, outPosWidth)
-        val exceptionFlags = Bits(OUTPUT, 5)
-    }
+  val io = new Bundle {
+    val invalidExc  = Bool(INPUT)   // overrides 'infiniteExc' and 'in'
+    val infiniteExc = Bool(INPUT)   // overrides 'in' except for 'in.sign'
+    val in = new RawPosit(inExpWidth, inPosWidth).asInput
+                                    // (allowed exponent range has limits)
+    val roundingMode   = UInt(INPUT, 3)
+    val detectTininess = UInt(INPUT, 1)
+    val out = Bits(OUTPUT, outPosWidth)
+    val exceptionFlags = Bits(OUTPUT, 5)
+  }
 
-    //------------------------------------------------------------------------
-    //------------------------------------------------------------------------
-    val sigMSBitAlwaysZero = ((options & flRoundOpt_sigMSBitAlwaysZero) != 0)
-    val effectiveInSigWidth =
-        if (sigMSBitAlwaysZero) inSigWidth else inSigWidth + 1
-    val neverUnderflows =
-        ((options &
-              (flRoundOpt_neverUnderflows | flRoundOpt_subnormsAlwaysExact)
-         ) != 0) ||
-            (inExpWidth < outExpWidth)
-    val neverOverflows =
-        ((options & flRoundOpt_neverOverflows) != 0) ||
-            (inExpWidth < outExpWidth)
-    val outNaNExp = BigInt(7)<<(outExpWidth - 2)
-    val outInfExp = BigInt(6)<<(outExpWidth - 2)
-    val outMaxFiniteExp = outInfExp - 1
-    val outMinNormExp = (BigInt(1)<<(outExpWidth - 1)) + 2
-    val outMinNonzeroExp = outMinNormExp - outSigWidth + 1
+  //------------------------------------------------------------------------
+  //------------------------------------------------------------------------
+  val sigMSBitAlwaysZero = ((options & flRoundOpt_sigMSBitAlwaysZero) != 0)
+  val effectiveInSigWidth =
+      if (sigMSBitAlwaysZero) inSigWidth else inSigWidth + 1
+  val neverUnderflows =
+      ((options &
+            (flRoundOpt_neverUnderflows | flRoundOpt_subnormsAlwaysExact)
+       ) != 0) ||
+          (inExpWidth < outExpWidth)
+  val neverOverflows =
+      ((options & flRoundOpt_neverOverflows) != 0) ||
+          (inExpWidth < outExpWidth)
+  val outNaNExp = BigInt(7)<<(outExpWidth - 2)
+  val outInfExp = BigInt(6)<<(outExpWidth - 2)
+  val outMaxFiniteExp = outInfExp - 1
+  val outMinNormExp = (BigInt(1)<<(outExpWidth - 1)) + 2
+  val outMinNonzeroExp = outMinNormExp - outSigWidth + 1
 
-    //------------------------------------------------------------------------
-    //------------------------------------------------------------------------
-    val roundingMode_near_even   = (io.roundingMode === round_near_even)
-    val roundingMode_minMag      = (io.roundingMode === round_minMag)
-    val roundingMode_min         = (io.roundingMode === round_min)
-    val roundingMode_max         = (io.roundingMode === round_max)
-    val roundingMode_near_maxMag = (io.roundingMode === round_near_maxMag)
-    val roundingMode_odd         = (io.roundingMode === round_odd)
+  //------------------------------------------------------------------------
+  //------------------------------------------------------------------------
+  val roundingMode_near_even   = (io.roundingMode === round_near_even)
+  val roundingMode_minMag      = (io.roundingMode === round_minMag)
+  val roundingMode_min         = (io.roundingMode === round_min)
+  val roundingMode_max         = (io.roundingMode === round_max)
+  val roundingMode_near_maxMag = (io.roundingMode === round_near_maxMag)
+  val roundingMode_odd         = (io.roundingMode === round_odd)
 
-    val roundMagUp =
-        (roundingMode_min && io.in.sign) || (roundingMode_max && ! io.in.sign)
+  val roundMagUp =
+      (roundingMode_min && io.in.sign) || (roundingMode_max && ! io.in.sign)
 
-    //------------------------------------------------------------------------
-    //------------------------------------------------------------------------
-    val sAdjustedExp =
-        if (inExpWidth < outExpWidth)
-            (io.in.sExp +&
-                 SInt((BigInt(1)<<outExpWidth) - (BigInt(1)<<inExpWidth))
-            )(outExpWidth, 0).zext
-        else if (inExpWidth == outExpWidth)
-            io.in.sExp
-        else
-            io.in.sExp +&
-                SInt((BigInt(1)<<outExpWidth) - (BigInt(1)<<inExpWidth))
-    val adjustedSig =
-        if (inSigWidth <= outSigWidth + 2)
-            io.in.sig<<(outSigWidth - inSigWidth + 2)
-        else
-            Cat(io.in.sig(inSigWidth, inSigWidth - outSigWidth - 1),
-                io.in.sig(inSigWidth - outSigWidth - 2, 0).orR
-            )
-    val doShiftSigDown1 =
-        if (sigMSBitAlwaysZero) Bool(false) else adjustedSig(outSigWidth + 2)
+  //------------------------------------------------------------------------
+  //------------------------------------------------------------------------
+  val sAdjustedExp =
+      if (inExpWidth < outExpWidth)
+          (io.in.sExp +&
+               SInt((BigInt(1)<<outExpWidth) - (BigInt(1)<<inExpWidth))
+          )(outExpWidth, 0).zext
+      else if (inExpWidth == outExpWidth)
+          io.in.sExp
+      else
+          io.in.sExp +&
+              SInt((BigInt(1)<<outExpWidth) - (BigInt(1)<<inExpWidth))
+  val adjustedSig =
+      if (inSigWidth <= outSigWidth + 2)
+          io.in.sig<<(outSigWidth - inSigWidth + 2)
+      else
+          Cat(io.in.sig(inSigWidth, inSigWidth - outSigWidth - 1),
+              io.in.sig(inSigWidth - outSigWidth - 2, 0).orR
+          )
+  val doShiftSigDown1 =
+      if (sigMSBitAlwaysZero) Bool(false) else adjustedSig(outSigWidth + 2)
 
-    val common_expOut   = Wire(UInt(width = outExpWidth + 1))
-    val common_fractOut = Wire(UInt(width = outSigWidth - 1))
-    val common_overflow       = Wire(Bool())
-    val common_totalUnderflow = Wire(Bool())
-    val common_underflow      = Wire(Bool())
-    val common_inexact        = Wire(Bool())
+  val common_expOut   = Wire(UInt(width = outExpWidth + 1))
+  val common_fractOut = Wire(UInt(width = outSigWidth - 1))
+  val common_overflow       = Wire(Bool())
+  val common_totalUnderflow = Wire(Bool())
+  val common_underflow      = Wire(Bool())
+  val common_inexact        = Wire(Bool())
 
-    if (
-        neverOverflows && neverUnderflows
-            && (effectiveInSigWidth <= outSigWidth)
-    ) {
+  if (
+      neverOverflows && neverUnderflows
+          && (effectiveInSigWidth <= outSigWidth)
+  ) {
 
-        //--------------------------------------------------------------------
-        //--------------------------------------------------------------------
-        common_expOut := sAdjustedExp(outExpWidth, 0) + doShiftSigDown1
-        common_fractOut :=
-            Mux(doShiftSigDown1,
-                adjustedSig(outSigWidth + 1, 3),
-                adjustedSig(outSigWidth, 2)
-            )
-        common_overflow       := Bool(false)
-        common_totalUnderflow := Bool(false)
-        common_underflow      := Bool(false)
-        common_inexact        := Bool(false)
+    //--------------------------------------------------------------------
+    //--------------------------------------------------------------------
+    common_expOut := sAdjustedExp(outExpWidth, 0) + doShiftSigDown1
+    common_fractOut :=
+        Mux(doShiftSigDown1,
+            adjustedSig(outSigWidth + 1, 3),
+            adjustedSig(outSigWidth, 2)
+        )
+    common_overflow       := Bool(false)
+    common_totalUnderflow := Bool(false)
+    common_underflow      := Bool(false)
+    common_inexact        := Bool(false)
 
-    } else {
+  } else {
 
         //--------------------------------------------------------------------
         //--------------------------------------------------------------------
