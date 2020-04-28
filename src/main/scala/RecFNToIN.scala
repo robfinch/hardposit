@@ -54,7 +54,7 @@ class RecFNToIN(expWidth: Int, posWidth: Int, intWidth: Int) extends Module
 
     //------------------------------------------------------------------------
     //------------------------------------------------------------------------
-    val rawIn = rawPositFromRecFN(expWidth, sigWidth, io.in)
+    val rawIn = rawPositFromBits(expWidth, sigWidth, io.in)
 
     val magGeOne = rawIn.sExp(expWidth)
     val posExp = rawIn.sExp(expWidth - 1, 0)

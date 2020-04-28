@@ -56,7 +56,7 @@ class
 
     //------------------------------------------------------------------------
     //------------------------------------------------------------------------
-    val rawIn = rawPositFromRecFN(inExpWidth, inPosWidth, io.in);
+    val rawIn = rawPositFromBits(inExpWidth, inPosWidth, io.in);
     if (inPosWidth == outPosWidth) {
       io.out := io.in
     }

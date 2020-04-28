@@ -2,12 +2,11 @@
 /*============================================================================
 
 This Chisel source file is part of a pre-release version of the HardPosit
-Arithmetic Package an adpatation of the HardFloat package, by John R. Hauser
-(with some contributions
-from Yunsup Lee and Andrew Waterman, mainly concerning testing).
+Arithmetic Package by Robert Finch an adpatation of the HardFloat package,
+by John R. Hauser
 
-Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
-University of California.  All rights reserved.
+Copyright (c) 2020 Robert Finch
+All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -40,30 +39,26 @@ package hardposit
 
 import Chisel._
 
-//----------------------------------------------------------------------------
-//----------------------------------------------------------------------------
-
-object resizeRawPosit
+class Compare(expWidth: Int, posWidth: Int) extends Module
 {
-  def apply(expWidth: Int, posWidth: Int, in: RawPosit): RawPosit =
-  {
-    val out = Wire(new RawPosit(expWidth, posWidth))
-    out.sign   := in.sign
-    out.isNaR  := in.isNaR
-    out.isInf  := in.isInf
-    out.isZero := in.isZero
-    val rx = Cat(in.regime,in.exp)
-    out.regsign = in.regsign
-    out.regime = rx(log2Up(posWidth)-1,expWidth)
-    out.exp = rx(expWidth-1:0)
-    out.sig :=
-      (if (in.sigWidth <= sigWidth)
-         in.sig<<(sigWidth - in.sigWidth)
-       else
-         Cat(in.sig(in.sigWidth - 1, in.sigWidth - sigWidth + 1),
-           in.sig(in.sigWidth - sigWidth, 0).orR
-         ))
-    out
+  val io = new Bundle {
+    val a = Bits(INPUT, posWidth)
+    val b = Bits(INPUT, posWidth)
+    val lt = Bool(OUTPUT)
+    val eq = Bool(OUTPUT)
+    val gt = Bool(OUTPUT)
   }
-}
 
+  val rawA = decompose(expWidth, posWidth, io.a)  // for NaR
+  val rawB = decompose(expWidth, posWidth, io.b)
+
+  val ordered = ! rawA.isNaR && ! rawB.isNaR
+
+  // The beauty of posits
+  val ordered_lt = a.asInt < b.asInt
+  val ordered_eq = a === b
+
+  io.lt := ordered && ordered_lt
+  io.eq := ordered && ordered_eq
+  io.gt := ordered && ! ordered_lt && ! ordered_eq
+}

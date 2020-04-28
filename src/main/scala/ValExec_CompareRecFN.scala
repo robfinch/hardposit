@@ -42,33 +42,33 @@ import Chisel._
 
 class ValExec_CompareRecFN_lt(expWidth: Int, posWidth: Int) extends Module
 {
-    val io = new Bundle {
-        val a = Bits(INPUT, posWidth-1)
-        val b = Bits(INPUT, posWidth-1)
-        val expected = new Bundle {
-            val out = Bits(INPUT, 1)
-            val exceptionFlags = Bits(INPUT, 5)
-        }
-        val actual = new Bundle {
-            val out = Bits(OUTPUT, 1)
-            val exceptionFlags = Bits(OUTPUT, 5)
-        }
-        val check = Bool(OUTPUT)
-        val pass = Bool(OUTPUT)
+  val io = new Bundle {
+    val a = Bits(INPUT, posWidth-1)
+    val b = Bits(INPUT, posWidth-1)
+    val expected = new Bundle {
+      val out = Bits(INPUT, 1)
+      val exceptionFlags = Bits(INPUT, 5)
     }
+    val actual = new Bundle {
+      val out = Bits(OUTPUT, 1)
+      val exceptionFlags = Bits(OUTPUT, 5)
+    }
+    val check = Bool(OUTPUT)
+    val pass = Bool(OUTPUT)
+  }
 
-    val compareRecFN = Module(new CompareRecFN(expWidth, posWidth))
-    compareRecFN.io.a := recFNFromFN(expWidth, posWidth, io.a)
-    compareRecFN.io.b := recFNFromFN(expWidth, posWidth, io.b)
-    compareRecFN.io.signaling := Bool(true)
+  val compareRecFN = Module(new CompareRecFN(expWidth, posWidth))
+  compareRecFN.io.a := recFNFromFN(expWidth, posWidth, io.a)
+  compareRecFN.io.b := recFNFromFN(expWidth, posWidth, io.b)
+  compareRecFN.io.signaling := Bool(true)
 
-    io.actual.out := compareRecFN.io.lt
-    io.actual.exceptionFlags := compareRecFN.io.exceptionFlags
+  io.actual.out := compareRecFN.io.lt
+  io.actual.exceptionFlags := compareRecFN.io.exceptionFlags
 
-    io.check := Bool(true)
-    io.pass :=
-        (io.actual.out === io.expected.out) &&
-        (io.actual.exceptionFlags === io.expected.exceptionFlags)
+  io.check := Bool(true)
+  io.pass :=
+    (io.actual.out === io.expected.out) &&
+    (io.actual.exceptionFlags === io.expected.exceptionFlags)
 }
 
 class ValExec_CompareRecF16_lt extends ValExec_CompareRecFN_lt(2, 16)

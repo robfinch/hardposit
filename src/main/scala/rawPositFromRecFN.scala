@@ -57,7 +57,7 @@ object rawPositFromRecFN
     out.isInf  := in(posWidth-1) === UInt(1) && in(posWidth-2,0)===UInt(0)
     out.isZero := in(posWidth-1,0) === UInt(0))
     out.sign   := in(posWidth-1)
-    out.sExp   := exp.zext
+    out.exp    := exp.zext
     out.regsign := n(posWidth-2)
     out.regime := Mux(n(posWidth-2),rgmlen,rgmlen-1)
     out.sigWidth := Max(0,posWidth - rgmlen - expWidth)

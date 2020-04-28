@@ -71,7 +71,7 @@ class RawPosit(val expWidth: Int, val posWidth: Int) extends Bundle
   val sign   = Bool()
   val regsign = Bool()
   val regime = UInt(width = log2Up(posWidth))
-  val sExp = SInt(width = expWidth + 2)
+  val exp = SInt(width = expWidth + 2)
   val sigWidth = posWidth - expWidth - 2 + 1
   val sig  = UInt(width = posWidth - expWidth - 2 + 1) // min regime = 10 or 01 (2 bits)
 

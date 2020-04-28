@@ -2,12 +2,11 @@
 /*============================================================================
 
 This Chisel source file is part of a pre-release version of the HardPosit
-Arithmetic Package an adpatation of the HardFloat package, by John R. Hauser
-(with some contributions
-from Yunsup Lee and Andrew Waterman, mainly concerning testing).
+Arithmetic Package by Robert Finch an adpatation of the HardFloat package,
+by John R. Hauser
 
-Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
-University of California.  All rights reserved.
+Copyright (c) 2020 Robert Finch
+All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -40,29 +39,31 @@ package hardposit
 
 import Chisel._
 
-//----------------------------------------------------------------------------
-//----------------------------------------------------------------------------
-
-object resizeRawPosit
+/*----------------------------------------------------------------------------
+| In the result, no more than one of 'isNaN', 'isInf', and 'isZero' will be
+| set.
+*----------------------------------------------------------------------------*/
+object decompose
 {
-  def apply(expWidth: Int, posWidth: Int, in: RawPosit): RawPosit =
+  def apply(expWidth: Int, posWidth: Int, in: Bits): RawPosit =
   {
+    val n = Mux(in(posWidth-1),-in,in)
+    val rgmlen = countLeadingBits(n(posWidth-2,0)) + 1
+    val exp = n(posWidth - rgmlen - 1, posWidth - rgmlen - expWidth)
+
     val out = Wire(new RawPosit(expWidth, posWidth))
-    out.sign   := in.sign
-    out.isNaR  := in.isNaR
-    out.isInf  := in.isInf
-    out.isZero := in.isZero
-    val rx = Cat(in.regime,in.exp)
-    out.regsign = in.regsign
-    out.regime = rx(log2Up(posWidth)-1,expWidth)
-    out.exp = rx(expWidth-1:0)
-    out.sig :=
-      (if (in.sigWidth <= sigWidth)
-         in.sig<<(sigWidth - in.sigWidth)
-       else
-         Cat(in.sig(in.sigWidth - 1, in.sigWidth - sigWidth + 1),
-           in.sig(in.sigWidth - sigWidth, 0).orR
-         ))
+    out.isNaR  := in(posWidth-1) === UInt(1) && in(posWidth-2,0)===UInt(0)
+    out.isInf  := in(posWidth-1) === UInt(1) && in(posWidth-2,0)===UInt(0)
+    out.isZero := in(posWidth-1,0) === UInt(0))
+    out.sign   := in(posWidth-1)
+    out.exp    := exp.zext
+    out.regsign := n(posWidth-2)
+    out.regime := Mux(n(posWidth-2),rgmlen,rgmlen-1)
+    out.sigWidth := Max(0,posWidth - rgmlen - expWidth)
+    if (posWidth - rgmlen - expWidth - 1 >= 0)
+      out.sig  := Cat(UInt(1,1),n(posWidth - rgmlen - expWidth - 1,0))
+    else
+      out.sig  := 1
     out
   }
 }

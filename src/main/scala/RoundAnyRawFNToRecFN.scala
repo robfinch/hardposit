@@ -98,16 +98,7 @@ class
 
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------
-  val sAdjustedExp =
-      if (inExpWidth < outExpWidth)
-          (io.in.sExp +&
-               SInt((BigInt(1)<<outExpWidth) - (BigInt(1)<<inExpWidth))
-          )(outExpWidth, 0).zext
-      else if (inExpWidth == outExpWidth)
-          io.in.sExp
-      else
-          io.in.sExp +&
-              SInt((BigInt(1)<<outExpWidth) - (BigInt(1)<<inExpWidth))
+  val sAdjustedExp = io.in.exp
   val adjustedSig =
       if (inSigWidth <= outSigWidth + 2)
           io.in.sig<<(outSigWidth - inSigWidth + 2)
@@ -290,30 +281,29 @@ class
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 
-class
-    RoundRawFNToRecFN(expWidth: Int, posWidth: Int, options: Int)
-    extends Module
+class RoundRawFNToRecFN(expWidth: Int, posWidth: Int, options: Int)
+  extends Module
 {
-    val io = new Bundle {
-        val invalidExc  = Bool(INPUT)   // overrides 'infiniteExc' and 'in'
-        val infiniteExc = Bool(INPUT)   // overrides 'in' except for 'in.sign'
-        val in = new RawPosit(expWidth, posWidth + 1).asInput
-        val roundingMode   = UInt(INPUT, 3)
-        val detectTininess = UInt(INPUT, 1)
-        val out = Bits(OUTPUT, posWidth)
-        val exceptionFlags = Bits(OUTPUT, 5)
-    }
+  val io = new Bundle {
+    val invalidExc  = Bool(INPUT)   // overrides 'infiniteExc' and 'in'
+    val infiniteExc = Bool(INPUT)   // overrides 'in' except for 'in.sign'
+    val in = new RawPosit(expWidth, posWidth + 1).asInput
+    val roundingMode   = UInt(INPUT, 3)
+    val detectTininess = UInt(INPUT, 1)
+    val out = Bits(OUTPUT, posWidth)
+    val exceptionFlags = Bits(OUTPUT, 5)
+  }
 
-    val roundAnyRawFNToRecFN =
-        Module(
-            new RoundAnyRawFNToRecFN(
-                    expWidth, posWidth + 1, expWidth, posWidth, options))
-    roundAnyRawFNToRecFN.io.invalidExc     := io.invalidExc
-    roundAnyRawFNToRecFN.io.infiniteExc    := io.infiniteExc
-    roundAnyRawFNToRecFN.io.in             := io.in
-    roundAnyRawFNToRecFN.io.roundingMode   := io.roundingMode
-    roundAnyRawFNToRecFN.io.detectTininess := io.detectTininess
-    io.out            := roundAnyRawFNToRecFN.io.out
-    io.exceptionFlags := roundAnyRawFNToRecFN.io.exceptionFlags
+  val roundAnyRawFNToRecFN =
+    Module(
+      new RoundAnyRawFNToRecFN(
+        expWidth, posWidth + 1, expWidth, posWidth, options))
+  roundAnyRawFNToRecFN.io.invalidExc     := io.invalidExc
+  roundAnyRawFNToRecFN.io.infiniteExc    := io.infiniteExc
+  roundAnyRawFNToRecFN.io.in             := io.in
+  roundAnyRawFNToRecFN.io.roundingMode   := io.roundingMode
+  roundAnyRawFNToRecFN.io.detectTininess := io.detectTininess
+  io.out            := roundAnyRawFNToRecFN.io.out
+  io.exceptionFlags := roundAnyRawFNToRecFN.io.exceptionFlags
 }
 

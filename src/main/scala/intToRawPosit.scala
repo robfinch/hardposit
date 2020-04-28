@@ -40,7 +40,7 @@ package hardposit
 
 import Chisel._
 
-object rawPositFromIN
+object intToRawPosit
 {
   def apply(signedIn: Bool, in: Bits): RawPosit =
   {

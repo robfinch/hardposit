@@ -2,12 +2,11 @@
 /*============================================================================
 
 This Chisel source file is part of a pre-release version of the HardPosit
-Arithmetic Package an adpatation of the HardFloat package, by John R. Hauser
-(with some contributions
-from Yunsup Lee and Andrew Waterman, mainly concerning testing).
+Arithmetic Package by Robert Finch an adpatation of the HardFloat package,
+by John R. Hauser
 
-Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
-University of California.  All rights reserved.
+Copyright (c) 2020 Robert Finch
+All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -40,30 +39,18 @@ package hardposit
 
 import Chisel._
 
-//----------------------------------------------------------------------------
-//----------------------------------------------------------------------------
-
-object resizeRawPosit
+object classify
 {
-  def apply(expWidth: Int, posWidth: Int, in: RawPosit): RawPosit =
+  def apply(expWidth: Int, posWidth: Int, in: Bits) =
   {
-    val out = Wire(new RawPosit(expWidth, posWidth))
-    out.sign   := in.sign
-    out.isNaR  := in.isNaR
-    out.isInf  := in.isInf
-    out.isZero := in.isZero
-    val rx = Cat(in.regime,in.exp)
-    out.regsign = in.regsign
-    out.regime = rx(log2Up(posWidth)-1,expWidth)
-    out.exp = rx(expWidth-1:0)
-    out.sig :=
-      (if (in.sigWidth <= sigWidth)
-         in.sig<<(sigWidth - in.sigWidth)
-       else
-         Cat(in.sig(in.sigWidth - 1, in.sigWidth - sigWidth + 1),
-           in.sig(in.sigWidth - sigWidth, 0).orR
-         ))
-    out
+    val rawIn = decompose(expWidth, posWidth, in)
+    val isFiniteNonzero = ! rawIn.isNaR && ! rawIn.isZero
+
+    Cat(
+      rawIn.isNaR,
+      ! rawIn.sign && isFiniteNonzero,
+      rawIn.isZero,
+      rawIn.sign   && isFiniteNonzero,
+    )
   }
 }
-
